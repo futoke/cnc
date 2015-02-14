@@ -37,7 +37,6 @@ int main(void) {
 
           printf("\n>>> ");
           fflush(stdout);
-//            usart_puts("\n>>> ");
 
             cmd_set_state(&cmd, NOT_READY);
         }
