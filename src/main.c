@@ -22,9 +22,6 @@ int main(void) {
     printf("\n>>> ");
     fflush(stdout);
 
-    // TEMP
-    __IO uint32_t counter = 0;
-
     while (1) {
 
         if (cmd_get_state(&cmd) == READY) {
@@ -45,11 +42,6 @@ int main(void) {
             cmd_set_state(&cmd, NOT_READY);
         }
 
-        if (counter++ == 0xFFFFF) {
-            STM_EVAL_LEDToggle(LED5);
-            counter = 0;
-        }
-
 //      char buff[256];
 //      float data;
 //
@@ -58,7 +50,7 @@ int main(void) {
 //      fgets(buff, sizeof(buff), stdin);
 //      int answer = sscanf(buff, "%s", &buff);
 //      printf("Your enter\t%s", buff);
-//        printf("Your enter\t%f, %d", data, answer);
+//      printf("Your enter\t%f, %d", data, answer);
     }
 }
 
