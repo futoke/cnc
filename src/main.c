@@ -16,7 +16,7 @@ int main(void) {
 
     STM_EVAL_LEDInit(LED3);
 //  STM_EVAL_LEDInit(LED4);
-  STM_EVAL_LEDInit(LED5);
+    STM_EVAL_LEDInit(LED5);
 //  STM_EVAL_LEDInit(LED6);
 
     printf("\n>>> ");
@@ -37,20 +37,9 @@ int main(void) {
 
           printf("\n>>> ");
           fflush(stdout);
-//            usart_puts("\n>>> ");
 
             cmd_set_state(&cmd, NOT_READY);
         }
-
-//      char buff[256];
-//      float data;
-//
-//      printf("\nEnter something:\t");
-//        scanf("%s" , buff);
-//      fgets(buff, sizeof(buff), stdin);
-//      int answer = sscanf(buff, "%s", &buff);
-//      printf("Your enter\t%s", buff);
-//      printf("Your enter\t%f, %d", data, answer);
     }
 }
 
