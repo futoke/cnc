@@ -32,7 +32,7 @@ int main(void) {
                 CCR1_Val = res;
                 printf("You enter: %s", cmd.text);
             } else {
-                printf("You enter something wrong...");
+                printf("You enter something wrong... ");
             }
 
           printf("\n>>> ");
