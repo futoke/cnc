@@ -1,23 +1,19 @@
 #include "main.h"
 
-__IO uint16_t CCR1_Val = 40961;
-__IO uint16_t CCR2_Val = 27309;
-__IO uint16_t CCR3_Val = 13654;
-__IO uint16_t CCR4_Val = 6826;
-
 int main(void) {
 	gpio_conf();
     usart_conf();
     tim_conf();
+    pwm_conf();
 
     if (SysTick_Config(SystemCoreClock / 1000)) {
         while (1)
             ;
     }
 
-    STM_EVAL_LEDInit(LED3);
+//  STM_EVAL_LEDInit(LED3);
 //  STM_EVAL_LEDInit(LED4);
-//    STM_EVAL_LEDInit(LED5);
+//  STM_EVAL_LEDInit(LED5);
 //  STM_EVAL_LEDInit(LED6);
 
     printf("\n>>> ");
@@ -30,7 +26,6 @@ int main(void) {
 
 			if (sscanf(cmd.text, "%d", &res) == 1) {
 				// Maybe I need to disable the interrupt from timer here...
-				CCR1_Val = res * STEPS_PER_REVOLUTION;
 				printf("You enter: %s", cmd.text);
 			} else {
 				printf("You enter something wrong... ");
@@ -46,95 +41,137 @@ int main(void) {
 
 void gpio_conf(void)
 {
-	GPIO_InitTypeDef  GPIO_InitStructure;
+//	GPIO_InitTypeDef  GPIO_InitStructure;
+//
+//	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+//
+//	GPIO_InitStructure.GPIO_Pin = \
+//			GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
+//	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+//	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+//	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+//	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+//
+//	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+	 GPIO_InitTypeDef GPIO_InitStruct;
 
-	GPIO_InitStructure.GPIO_Pin = \
-			GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	/* Clock for GPIOD */
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 
-	GPIO_Init(GPIOC, &GPIO_InitStructure);
+	/* Alternating functions for pins */
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource12, GPIO_AF_TIM4);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource13, GPIO_AF_TIM4);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource14, GPIO_AF_TIM4);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource15, GPIO_AF_TIM4);
+
+	/* Set pins */
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14
+			| GPIO_Pin_15;
+	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
+	GPIO_Init(GPIOD, &GPIO_InitStruct);
 }
 
 void tim_conf(void)
 {
-    TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
-    TIM_OCInitTypeDef  TIM_OCInitStructure;
-    uint16_t PrescalerValue = 0;
+	TIM_TimeBaseInitTypeDef TIM_BaseStruct;
 
+	/* Enable clock for TIM4 */
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
+	/*
+	 TIM4 is connected to APB1 bus, which has on F407 device 42MHz clock
+	 But, timer has internal PLL, which double this frequency for timer, up to 84MHz
+	 Remember: Not each timer is connected to APB1, there are also timers connected
+	 on APB2, which works at 84MHz by default, and internal PLL increase
+	 this to up to 168MHz
 
-    // NVIC init
-    NVIC_InitTypeDef NVIC_InitStructure;
+	 Set timer prescaller
+	 Timer count frequency is set with
 
-    /* TIM3 clock enable */
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+	 timer_tick_frequency = Timer_default_frequency / (prescaller_set + 1)
 
-    /* Enable the TIM3 gloabal Interrupt */
-    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
+	 In our case, we want a max frequency for timer, so we set prescaller to 0
+	 And our timer will have tick frequency
 
+	 timer_tick_frequency = 84000000 / (0 + 1) = 84000000
+	 */
+	TIM_BaseStruct.TIM_Prescaler = 0;
+	/* Count up */
+	TIM_BaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
+	/*
+	 Set timer period when it have reset
+	 First you have to know max value for timer
+	 In our case it is 16bit = 65535
+	 To get your frequency for PWM, equation is simple
 
-    /* Compute the prescaler value */
-	PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 26214000) - 1;
+	 PWM_frequency = timer_tick_frequency / (TIM_Period + 1)
 
+	 If you know your PWM frequency you want to have timer period set correct
 
-	/* Time base configuration */
-	TIM_TimeBaseStructure.TIM_Period = 65535;
-	TIM_TimeBaseStructure.TIM_Prescaler = 0;
-	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
-	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+	 TIM_Period = timer_tick_frequency / PWM_frequency - 1
 
-	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+	 In our case, for 10Khz PWM_frequency, set Period to
 
-	/* Prescaler configuration */
-	TIM_PrescalerConfig(TIM3, PrescalerValue, TIM_PSCReloadMode_Immediate);
+	 TIM_Period = 84000000 / 10000 - 1 = 8399
 
-	/* Output Compare Timing Mode configuration: Channel1 */
-	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Timing;
-	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	TIM_OCInitStructure.TIM_Pulse = CCR1_Val;
-	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+	 If you get TIM_Period larger than max timer value (in our case 65535),
+	 you have to choose larger prescaler and slow down timer tick frequency
+	 */
+	TIM_BaseStruct.TIM_Period = 8399; /* 10kHz PWM */
+	TIM_BaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
+	TIM_BaseStruct.TIM_RepetitionCounter = 0;
 
-	TIM_OC1Init(TIM3, &TIM_OCInitStructure);
+	/* Initialize TIM4 */
+	TIM_TimeBaseInit(TIM4, &TIM_BaseStruct);
 
-	TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Disable);
+	/* Start count on TIM4 */
+	TIM_Cmd(TIM4, ENABLE);
+}
 
-	/* Output Compare Timing Mode configuration: Channel2 */
-	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	TIM_OCInitStructure.TIM_Pulse = CCR2_Val;
+void pwm_conf(void)
+{
+	TIM_OCInitTypeDef TIM_OCStruct;
 
-	TIM_OC2Init(TIM3, &TIM_OCInitStructure);
+	/* Common settings */
 
-	TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Disable);
+	/* PWM mode 2 = Clear on compare match */
+	/* PWM mode 1 = Set on compare match */
+	TIM_OCStruct.TIM_OCMode = TIM_OCMode_PWM2;
+	TIM_OCStruct.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OCStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
 
-	/* Output Compare Timing Mode configuration: Channel3 */
-	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	TIM_OCInitStructure.TIM_Pulse = CCR3_Val;
+	/*
+	 To get proper duty cycle, you have simple equation
 
-	TIM_OC3Init(TIM3, &TIM_OCInitStructure);
+	 pulse_length = ((TIM_Period + 1) * DutyCycle) / 100 - 1
 
-	TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Disable);
+	 where DutyCycle is in percent, between 0 and 100%
 
-	/* Output Compare Timing Mode configuration: Channel4 */
-	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	TIM_OCInitStructure.TIM_Pulse = CCR4_Val;
+	 25% duty cycle:     pulse_length = ((8399 + 1) * 25) / 100 - 1 = 2099
+	 50% duty cycle:     pulse_length = ((8399 + 1) * 50) / 100 - 1 = 4199
+	 75% duty cycle:     pulse_length = ((8399 + 1) * 75) / 100 - 1 = 6299
+	 100% duty cycle:    pulse_length = ((8399 + 1) * 100) / 100 - 1 = 8399
 
-	TIM_OC4Init(TIM3, &TIM_OCInitStructure);
+	 Remember: if pulse_length is larger than TIM_Period, you will have output
+	 HIGH all the time
+	*/
+	TIM_OCStruct.TIM_Pulse = 2099; /* 25% duty cycle */
+	TIM_OC1Init(TIM4, &TIM_OCStruct);
+	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
-	TIM_OC4PreloadConfig(TIM3, TIM_OCPreload_Disable);
+	TIM_OCStruct.TIM_Pulse = 4199; /* 50% duty cycle */
+	TIM_OC2Init(TIM4, &TIM_OCStruct);
+	TIM_OC2PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
-	/* TIM Interrupts enable */
-	TIM_ITConfig(TIM3, TIM_IT_CC1 | TIM_IT_CC2 | TIM_IT_CC3 | TIM_IT_CC4,
-			ENABLE);
+	TIM_OCStruct.TIM_Pulse = 6299; /* 75% duty cycle */
+	TIM_OC3Init(TIM4, &TIM_OCStruct);
+	TIM_OC3PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
-	/* TIM3 enable counter */
-	TIM_Cmd(TIM3, ENABLE);
+	TIM_OCStruct.TIM_Pulse = 8399; /* 100% duty cycle */
+	TIM_OC4Init(TIM4, &TIM_OCStruct);
+	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
 }
 
