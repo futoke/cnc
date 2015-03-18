@@ -82,8 +82,7 @@ void tim_conf(void)
 
 
     /* Compute the prescaler value */
-//	PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 131070) - 1;
-    PrescalerValue = (uint16_t) 2563;
+	PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 26214000) - 1;
 
 
 	/* Time base configuration */
