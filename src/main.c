@@ -60,10 +60,10 @@ void gpio_conf(void)
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 
 	/* Alternating functions for pins */
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource12, GPIO_AF_TIM4);
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource13, GPIO_AF_TIM4);
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource14, GPIO_AF_TIM4);
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource15, GPIO_AF_TIM4);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource12, GPIO_AF_TIM5);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource13, GPIO_AF_TIM5);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource14, GPIO_AF_TIM5);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource15, GPIO_AF_TIM5);
 
 	/* Set pins */
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14
@@ -80,7 +80,7 @@ void tim_conf(void)
 	TIM_TimeBaseInitTypeDef TIM_BaseStruct;
 
 	/* Enable clock for TIM4 */
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
 	/*
 	 TIM4 is connected to APB1 bus, which has on F407 device 42MHz clock
 	 But, timer has internal PLL, which double this frequency for timer, up to 84MHz
@@ -98,7 +98,7 @@ void tim_conf(void)
 
 	 timer_tick_frequency = 84000000 / (0 + 1) = 84000000
 	 */
-	TIM_BaseStruct.TIM_Prescaler = 0;
+	TIM_BaseStruct.TIM_Prescaler = 1000;
 	/* Count up */
 	TIM_BaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	/*
@@ -120,15 +120,15 @@ void tim_conf(void)
 	 If you get TIM_Period larger than max timer value (in our case 65535),
 	 you have to choose larger prescaler and slow down timer tick frequency
 	 */
-	TIM_BaseStruct.TIM_Period = 8399; /* 10kHz PWM */
+	TIM_BaseStruct.TIM_Period = 8399 * 2; /* 10kHz PWM */
 	TIM_BaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_BaseStruct.TIM_RepetitionCounter = 0;
 
 	/* Initialize TIM4 */
-	TIM_TimeBaseInit(TIM4, &TIM_BaseStruct);
+	TIM_TimeBaseInit(TIM5, &TIM_BaseStruct);
 
 	/* Start count on TIM4 */
-	TIM_Cmd(TIM4, ENABLE);
+	TIM_Cmd(TIM5, ENABLE);
 }
 
 void pwm_conf(void)
@@ -158,20 +158,20 @@ void pwm_conf(void)
 	 Remember: if pulse_length is larger than TIM_Period, you will have output
 	 HIGH all the time
 	*/
-	TIM_OCStruct.TIM_Pulse = 2099; /* 25% duty cycle */
-	TIM_OC1Init(TIM4, &TIM_OCStruct);
-	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Enable);
+//	TIM_OCStruct.TIM_Pulse = 2099; /* 25% duty cycle */
+//	TIM_OC1Init(TIM4, &TIM_OCStruct);
+//	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
 	TIM_OCStruct.TIM_Pulse = 4199; /* 50% duty cycle */
-	TIM_OC2Init(TIM4, &TIM_OCStruct);
-	TIM_OC2PreloadConfig(TIM4, TIM_OCPreload_Enable);
+	TIM_OC2Init(TIM5, &TIM_OCStruct);
+	TIM_OC2PreloadConfig(TIM5, TIM_OCPreload_Enable);
 
-	TIM_OCStruct.TIM_Pulse = 6299; /* 75% duty cycle */
-	TIM_OC3Init(TIM4, &TIM_OCStruct);
-	TIM_OC3PreloadConfig(TIM4, TIM_OCPreload_Enable);
-
-	TIM_OCStruct.TIM_Pulse = 8399; /* 100% duty cycle */
-	TIM_OC4Init(TIM4, &TIM_OCStruct);
-	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
+//	TIM_OCStruct.TIM_Pulse = 6299; /* 75% duty cycle */
+//	TIM_OC3Init(TIM4, &TIM_OCStruct);
+//	TIM_OC3PreloadConfig(TIM4, TIM_OCPreload_Enable);
+//
+//	TIM_OCStruct.TIM_Pulse = 8399; /* 100% duty cycle */
+//	TIM_OC4Init(TIM4, &TIM_OCStruct);
+//	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
 }
 
