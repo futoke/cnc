@@ -119,7 +119,7 @@ void tim_conf(void)
 	 If you get TIM_Period larger than max timer value (in our case 65535),
 	 you have to choose larger prescaler and slow down timer tick frequency
 	 */
-	TIM_BaseStruct.TIM_Period = 8399 * 2; /* 10kHz PWM */
+	TIM_BaseStruct.TIM_Period = 839900 * 2; /* 10kHz PWM */
 	TIM_BaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_BaseStruct.TIM_RepetitionCounter = 0;
 
@@ -161,7 +161,7 @@ void pwm_conf(void)
 //	TIM_OC1Init(TIM4, &TIM_OCStruct);
 //	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
-	TIM_OCStruct.TIM_Pulse = 4199; /* 50% duty cycle */
+	TIM_OCStruct.TIM_Pulse = 419900; /* 50% duty cycle */
 	TIM_OC1Init(TIM5, &TIM_OCStruct);
 	TIM_OC1PreloadConfig(TIM5, TIM_OCPreload_Enable);
 
