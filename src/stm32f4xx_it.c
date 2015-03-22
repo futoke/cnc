@@ -14,11 +14,7 @@
 #define USART_FLAGS (USART_FLAG_NE | USART_FLAG_FE | USART_FLAG_PE | USART_FLAG_ORE)
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-uint16_t capture = 0;
-extern __IO uint16_t CCR1_Val;
-extern __IO uint16_t CCR2_Val;
-extern __IO uint16_t CCR3_Val;
-extern __IO uint16_t CCR4_Val;
+extern __IO uint32_t tim5_period;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -130,6 +126,20 @@ void SysTick_Handler(void)
   */
 void TIM3_IRQHandler(void)
 {
+}
+
+/**
+  * @brief  This function handles TIM5 global interrupt request.
+  * @param  None
+  * @retval None
+  */
+void TIM5_IRQHandler(void)
+{
+	if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
+		STM_EVAL_LEDToggle(LED3);
+
+		TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
+	}
 }
 
 /**
