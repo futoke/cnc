@@ -26,7 +26,7 @@ int main(void) {
 		if (cmd_get_state(&cmd) == READY) {
 			uint32_t res;
 
-			if (sscanf(cmd.text, "%d", &res) == 1) {
+			if (sscanf(cmd.text, "%lu", &res) == 1) {
 				// Maybe I need to disable the interrupt from timer here...
 				TIM_SetCounter(TIM5, 1);
 				TIM_SetAutoreload(TIM5, res);
@@ -144,8 +144,8 @@ void tim_conf(void)
 	/* TIM5 clock enable */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
 	/* Time base configuration */
-	TIM_TimeBaseStructure.TIM_Period = 1999;
-	TIM_TimeBaseStructure.TIM_Prescaler = 16799;
+	TIM_TimeBaseStructure.TIM_Period = 999;
+	TIM_TimeBaseStructure.TIM_Prescaler = 41; // 1MHz
 	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInit(TIM5, &TIM_TimeBaseStructure);

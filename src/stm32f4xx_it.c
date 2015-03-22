@@ -103,6 +103,18 @@ void SVC_Handler(void)
 void PendSV_Handler(void)
 {}
 
+uint8_t delay_cycles (uint32_t cycles)
+{
+	static uint32_t cnt = 0;
+
+	if (cnt++ == cycles) {
+		cnt = 0;
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 /**
   * @brief  This function handles SysTick Handler.
   * @param  None
@@ -111,12 +123,39 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
     uint8_t ch;
+    static uint8_t acc = 0;
 
     if (!buff_empty(rx_buff)) {
         ch = buff_get(&rx_buff);
         cmd_add_ch(&cmd, ch);
         usart_putch(ch);
     }
+
+	if (acc) {
+		if (tim5_period > 50) {
+			if (delay_cycles(16)) {
+				TIM_SetCounter(TIM5, 1);
+				TIM_SetAutoreload(TIM5, tim5_period);
+				tim5_period -= 5;
+			}
+		} else {
+			if (delay_cycles(1024)){
+				acc = 0;
+			}
+		}
+	} else {
+		if (tim5_period < 1000) {
+			if (delay_cycles(16)) {
+				TIM_SetCounter(TIM5, 1);
+				TIM_SetAutoreload(TIM5, tim5_period);
+				tim5_period += 5;
+			}
+		} else {
+			acc = 1;
+		}
+
+	}
+//    printf("%lu\n", TIM_GetCounter(TIM5));
 }
 
 /**
