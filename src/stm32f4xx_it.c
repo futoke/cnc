@@ -14,11 +14,7 @@
 #define USART_FLAGS (USART_FLAG_NE | USART_FLAG_FE | USART_FLAG_PE | USART_FLAG_ORE)
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-uint16_t capture = 0;
-extern __IO uint16_t CCR1_Val;
-extern __IO uint16_t CCR2_Val;
-extern __IO uint16_t CCR3_Val;
-extern __IO uint16_t CCR4_Val;
+extern __IO uint32_t tim5_period;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -107,6 +103,18 @@ void SVC_Handler(void)
 void PendSV_Handler(void)
 {}
 
+uint8_t delay_cycles (uint32_t cycles)
+{
+	static uint32_t cnt = 0;
+
+	if (cnt++ == cycles) {
+		cnt = 0;
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 /**
   * @brief  This function handles SysTick Handler.
   * @param  None
@@ -115,12 +123,39 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
     uint8_t ch;
+    static uint8_t acc = 0;
 
     if (!buff_empty(rx_buff)) {
         ch = buff_get(&rx_buff);
         cmd_add_ch(&cmd, ch);
         usart_putch(ch);
     }
+
+	if (acc) {
+		if (tim5_period > 1221) {
+			if (delay_cycles(8)) {
+				TIM_SetCounter(TIM5, 1);
+				TIM_SetAutoreload(TIM5, tim5_period);
+				tim5_period -= 50;
+			}
+		} else {
+			if (delay_cycles(2000)){
+				acc = 0;
+			}
+		}
+	} else {
+		if (tim5_period < 10000) {
+			if (delay_cycles(8)) {
+				TIM_SetCounter(TIM5, 1);
+				TIM_SetAutoreload(TIM5, tim5_period);
+				tim5_period += 50;
+			}
+		} else {
+			acc = 1;
+		}
+
+	}
+//    printf("%lu\n", TIM_GetCounter(TIM5));
 }
 
 /**
@@ -130,48 +165,20 @@ void SysTick_Handler(void)
   */
 void TIM3_IRQHandler(void)
 {
-  if (TIM_GetITStatus(TIM3, TIM_IT_CC1) != RESET)
-  {
-    TIM_ClearITPendingBit(TIM3, TIM_IT_CC1);
+}
 
-	static const uint16_t full_step[] = {
-			0x04, 0x06, 0x02, 0x0A,
-			0x08, 0x09, 0x01, 0x05
-	};
-	static uint8_t step;
-	GPIOC->ODR = (GPIOC->ODR &= 0xF0) | full_step[7 & step++];
-	STM_EVAL_LEDToggle(LED3);
+/**
+  * @brief  This function handles TIM5 global interrupt request.
+  * @param  None
+  * @retval None
+  */
+void TIM5_IRQHandler(void)
+{
+	if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
+		STM_EVAL_LEDToggle(LED3);
 
-    capture = TIM_GetCapture1(TIM3);
-    TIM_SetCompare1(TIM3, capture + CCR1_Val);
-  }
-  else if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
-  {
-    TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
-
-    /* LED2 toggling with frequency = 109.8 Hz */
-//    STM_EVAL_LEDToggle(LED4);
-    capture = TIM_GetCapture2(TIM3);
-    TIM_SetCompare2(TIM3, capture + CCR2_Val);
-  }
-  else if (TIM_GetITStatus(TIM3, TIM_IT_CC3) != RESET)
-  {
-    TIM_ClearITPendingBit(TIM3, TIM_IT_CC3);
-
-    /* LED3 toggling with frequency = 219.7 Hz */
-//    STM_EVAL_LEDToggle(LED5);
-    capture = TIM_GetCapture3(TIM3);
-    TIM_SetCompare3(TIM3, capture + CCR3_Val);
-  }
-  else
-  {
-    TIM_ClearITPendingBit(TIM3, TIM_IT_CC4);
-
-    /* LED4 toggling with frequency = 439.4 Hz */
-//    STM_EVAL_LEDToggle(LED6);
-    capture = TIM_GetCapture4(TIM3);
-    TIM_SetCompare4(TIM3, capture + CCR4_Val);
-  }
+		TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
+	}
 }
 
 /**

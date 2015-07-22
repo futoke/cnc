@@ -15,7 +15,6 @@
 
 /* Exported constants --------------------------------------------------------*/
 #define BUFF_SIZE 256
-#define BUFF_MASK (BUFF_SIZE - 1)
 /* Exported types ------------------------------------------------------------*/
 typedef struct{
     uint16_t head;
@@ -24,6 +23,7 @@ typedef struct{
     uint8_t buff[BUFF_SIZE];
 } fifo_t;
 /* Exported macro ------------------------------------------------------------*/
+#define BUFF_MASK (BUFF_SIZE - 1)
 /* Exported functions ------------------------------------------------------- */
 void buff_init(__IO fifo_t *buffer);
 void buff_put(__IO fifo_t *buffer, uint8_t ch);

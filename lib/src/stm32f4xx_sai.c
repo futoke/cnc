@@ -179,7 +179,7 @@
   *                     
   * @retval None
   */
-void SAI_DeInit(SAI_TypeDef* SAIx)
+void SAI_DeInit(__attribute__((unused)) SAI_TypeDef* SAIx)
 {
   /* Check the parameters */
   assert_param(IS_SAI_PERIPH(SAIx));
@@ -458,7 +458,8 @@ void SAI_Cmd(SAI_Block_TypeDef* SAI_Block_x, FunctionalState NewState)
   *            @arg SAI_StreoMode : Set streo audio mode                       
   * @retval None
   */
-void SAI_MonoModeConfig(SAI_Block_TypeDef* SAI_Block_x, uint32_t SAI_Mono_StreoMode)
+void SAI_MonoModeConfig(SAI_Block_TypeDef* SAI_Block_x,
+						__attribute__((unused)) uint32_t SAI_Mono_StreoMode)
 {
   /* Check the parameters */
   assert_param(IS_SAI_BLOCK_PERIPH(SAI_Block_x));
@@ -481,7 +482,8 @@ void SAI_MonoModeConfig(SAI_Block_TypeDef* SAI_Block_x, uint32_t SAI_Mono_StreoM
   *            @arg SAI_Output_Released : SD output line is released (HI-Z)                       
   * @retval None
   */
-void SAI_TRIStateConfig(SAI_Block_TypeDef* SAI_Block_x, uint32_t SAI_TRIState)
+void SAI_TRIStateConfig(SAI_Block_TypeDef* SAI_Block_x,
+						__attribute__((unused)) uint32_t SAI_TRIState)
 {
   /* Check the parameters */
   assert_param(IS_SAI_BLOCK_PERIPH(SAI_Block_x));
