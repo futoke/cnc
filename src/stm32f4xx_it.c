@@ -132,23 +132,23 @@ void SysTick_Handler(void)
     }
 
 	if (acc) {
-		if (tim5_period > 50) {
-			if (delay_cycles(16)) {
+		if (tim5_period > 1221) {
+			if (delay_cycles(8)) {
 				TIM_SetCounter(TIM5, 1);
 				TIM_SetAutoreload(TIM5, tim5_period);
-				tim5_period -= 5;
+				tim5_period -= 50;
 			}
 		} else {
-			if (delay_cycles(1024)){
+			if (delay_cycles(2000)){
 				acc = 0;
 			}
 		}
 	} else {
-		if (tim5_period < 1000) {
-			if (delay_cycles(16)) {
+		if (tim5_period < 10000) {
+			if (delay_cycles(8)) {
 				TIM_SetCounter(TIM5, 1);
 				TIM_SetAutoreload(TIM5, tim5_period);
-				tim5_period += 5;
+				tim5_period += 50;
 			}
 		} else {
 			acc = 1;
