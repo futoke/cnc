@@ -1,5 +1,5 @@
 /*
- * lcd.c
+ * delay.c
  *
  *  Created on: 22.08.2015.
  *      Author: ichiro

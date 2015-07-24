@@ -7,6 +7,7 @@
 
 #include "stm32f4xx.h"
 #include "main.h"
+#include "lcd.h"
 
 #define ECHOBACK
 
@@ -150,7 +151,6 @@ caddr_t _sbrk(int incr)
 /*
  read - чтение из файла, у нас пока для чтения есть только stdin
  */
-
 int _read(int file, char *ptr, int len)
 {
 	int num;
@@ -166,11 +166,13 @@ int _read(int file, char *ptr, int len)
 				*ptr++ = c;
 #ifdef ECHOBACK
 				usart_putch(c);
+				// lcd_write(c);
 #endif
 				if (c == '\r' && num <= (len - 2)) { /* 0x0D */
 					*ptr = '\n'; /* 0x0A */
 #ifdef ECHOBACK
 					usart_putch('\n'); /* 0x0A */
+					//lcd_write('\n');
 #endif
 					return num + 2;
 				}
@@ -226,10 +228,15 @@ int _write(int file, char *ptr, int len)
 	int n;
 
 	switch (file) {
-	case STDOUT_FILENO: /*stdout*/
-	case STDERR_FILENO: /* stderr */
+	case STDOUT_FILENO: /* stderr */
 		for (n = 0; n < len; n++) {
 			usart_putch((uint8_t) *ptr++);
+			//lcd_write((uint8_t) *ptr++);
+		}
+		break;
+	case STDERR_FILENO:
+		for (n = 0; n < len; n++) {
+			lcd_putch((uint8_t) *ptr++);
 		}
 		break;
 	default:

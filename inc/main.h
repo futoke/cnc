@@ -9,7 +9,8 @@
 
 #include "usart.h"
 #include "buffer.h"
-#include "i2c.h"
+#include "encoder.h"
+#include "lcd.h"
 #include "cmd.h"
 
 /* Exported types ------------------------------------------------------------*/

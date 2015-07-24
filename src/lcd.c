@@ -36,9 +36,16 @@ lcdi2c_t lcdi2c;
 // LiquidCrystal constructor is called).
 
 
-void lcd_write(uint8_t value)
+void lcd_putch(uint8_t value)
 {
 	lcd_send(value, Rs);
+}
+
+void lcd_puts(uint8_t *str)
+{
+  while (*str) {
+	  lcd_putch(*str++);
+  }
 }
 
 void lcd_init(uint8_t lcd_addr, uint8_t lcd_cols, uint8_t lcd_rows)
@@ -221,7 +228,7 @@ void lcd_create_char(uint8_t location, uint8_t charmap[])
 	location &= 0x7; // we only have 8 locations 0-7
 	lcd_command(LCD_SETCGRAMADDR | (location << 3));
 	for (int i = 0; i < 8; i++) {
-		lcd_write(charmap[i]);
+		lcd_putch(charmap[i]);
 	}
 }
 
@@ -271,7 +278,7 @@ void lcd_write_4bits(uint8_t value)
 void lcd_expander_write(uint8_t data)
 {
 	i2c_start_trans(I2C1, I2C_Direction_Transmitter, lcdi2c.addr);
-	i2c_putch(I2C1, (int) (data) | lcdi2c.backlightval);
+	i2c_write_byte(I2C1, (int) (data) | lcdi2c.backlightval);
 	I2C_GenerateSTOP(I2C1, ENABLE);
 }
 
@@ -320,4 +327,10 @@ void lcd_set_backlight(uint8_t new_val)
 	} else {
 		lcd_no_backlight(); // turn backlight off
 	}
+}
+
+void lcd_conf(void)
+{
+	lcd_init(ADDRESS, COLS, ROWS);
+	lcd_backlight();
 }

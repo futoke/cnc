@@ -4,10 +4,14 @@ __IO uint32_t tim5_period;
 
 void tim_conf(void);
 
-int main(void) {
+int main(void)
+{
+	tim_conf();
     usart_conf();
-    tim_conf();
+    lcd_conf();
+    encoder_init();
 
+    // Initialize SysTick timer
     if (SysTick_Config(SystemCoreClock / 1000)) {
         while (1)
             ;
@@ -31,8 +35,10 @@ int main(void) {
 				TIM_SetCounter(TIM5, 1);
 				TIM_SetAutoreload(TIM5, res);
 				printf("You enter: %s", cmd.text);
+//				fprintf(stderr, "You enter: %s", cmd.text);
 			} else {
 				printf("You enter something wrong... ");
+//				fprintf(stderr, "You enter something wrong... ");
 			}
 
 			printf("\n>>> ");
@@ -49,8 +55,7 @@ int main(void) {
 ////
 ////	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
 ////
-////	GPIO_InitStructure.GPIO_Pin = \
-////			GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
+////	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
 ////	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 ////	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 ////	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;

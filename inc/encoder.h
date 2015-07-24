@@ -1,26 +1,24 @@
-/* i2c.h
+/* encoder.h
  *
- *  Created on: 22.07.2015.
+ *  Created on: 24.07.2015.
  *      Author: ichiro
  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef CNC_I2C_H
-#define CNC_I2C_H
+#ifndef CNC_ENCODER_H
+#define CNC_ENCODER_H
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
 #include "stm32f4_discovery.h"
-
 /* Exported constants --------------------------------------------------------*/
 /* Exported types ------------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-void i2c_conf(void);
-void i2c_start_trans(I2C_TypeDef* I2Cx, uint8_t trans_dir, uint8_t slave_addr);
-void i2c_write_byte(I2C_TypeDef* I2Cx, uint8_t ch);
-uint8_t i2c_read_byte(I2C_TypeDef* I2Cx);
-void i2c_puts(uint8_t *str);
+void RCC_Configuration(void);
+void GPIO_Configuration(void);
+void TIM3_Configuration(void);
+void encoder_init(void);
 /* Exported variables --------------------------------------------------------*/
 
-#endif /* CNC_I2C_H */
+#endif /* CNC_ENCODER_H */

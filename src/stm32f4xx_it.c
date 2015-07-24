@@ -130,7 +130,7 @@ void SysTick_Handler(void)
         cmd_add_ch(&cmd, ch);
         usart_putch(ch);
     }
-
+/******************************************************************************/
 	if (acc) {
 		if (tim5_period > 1221) {
 			if (delay_cycles(8)) {
@@ -153,9 +153,13 @@ void SysTick_Handler(void)
 		} else {
 			acc = 1;
 		}
-
 	}
-//    printf("%lu\n", TIM_GetCounter(TIM5));
+/******************************************************************************/
+	uint32_t enc_pos = TIM3->CNT;
+	uint8_t buff[20];
+	sprintf(buff, "%u", enc_pos);
+	usart_puts(buff);
+	usart_putch('\n');
 }
 
 /**

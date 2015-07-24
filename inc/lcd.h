@@ -1,4 +1,4 @@
-/* usart.h
+/* lcd.h
  *
  *  Created on: 22.07.2015.
  *      Author: ichiro
@@ -60,6 +60,10 @@
 #define En 										0x04  // Enable bit
 #define Rw 										0x02  // Read/Write bit
 #define Rs 										0x01  // Register select bit
+// 2004 display parameters
+#define ADDRESS									0x27
+#define COLS									20
+#define ROWS									4
 /* Exported types ------------------------------------------------------------*/
 typedef struct {
 	uint8_t addr;
@@ -73,7 +77,10 @@ typedef struct {
 } lcdi2c_t;
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-void lcd_write(uint8_t value);
+void lcd_conf(void);
+
+void lcd_putch(uint8_t value);
+void lcd_puts(uint8_t *str);
 void lcd_init(uint8_t lcd_Addr, uint8_t lcd_cols, uint8_t lcd_rows);
 void lcd_begin(uint8_t rows); //, uint8_t charsize = LCD_5x8DOTS );
 void lcd_clear();

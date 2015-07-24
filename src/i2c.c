@@ -15,7 +15,8 @@
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
-void i2c_conf(void) {
+void i2c_conf(void)
+{
 	GPIO_InitTypeDef GPIOB_InitStructure;
 	I2C_InitTypeDef I2C1_InitStructure;
 
@@ -68,22 +69,16 @@ void i2c_start_trans(I2C_TypeDef* I2Cx, uint8_t trans_dir, uint8_t slave_addr)
     }
 }
 
-void i2c_putch(I2C_TypeDef* I2Cx, uint8_t ch)
+void i2c_write_byte(I2C_TypeDef* I2Cx, uint8_t ch)
 {
     I2C_SendData(I2Cx, ch);
     while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
     	;
 }
 
-uint8_t i2c_getch(I2C_TypeDef* I2Cx)
+uint8_t i2c_read_byte(I2C_TypeDef* I2Cx)
 {
     while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_RECEIVED))
     	;
     return I2C_ReceiveData(I2Cx);
-}
-
-void i2c_puts(uint8_t *str)
-{
-  while (*str)
-    i2c_putch(I2C1, *str++);
 }
