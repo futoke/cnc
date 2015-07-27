@@ -329,8 +329,23 @@ void lcd_set_backlight(uint8_t new_val)
 	}
 }
 
+/******************************************************************************/
+/*                         Functions for 2004 display                         */
+/******************************************************************************/
+
 void lcd_conf(void)
 {
 	lcd_init(ADDRESS, COLS, ROWS);
 	lcd_backlight();
+}
+
+void lcd_puts_row(uint8_t *str, uint8_t row)
+{
+	lcd_set_cursor(0, row);
+	lcd_puts(str);
+}
+
+void lcd_clear_row(uint8_t row)
+{
+	lcd_puts_row(BLANK_ROW, row);
 }

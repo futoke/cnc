@@ -18,7 +18,9 @@
 void RCC_Configuration(void);
 void GPIO_Configuration(void);
 void TIM3_Configuration(void);
-void encoder_init(void);
+void encoder_conf(void);
 /* Exported variables --------------------------------------------------------*/
+__IO uint32_t enc_pos;
+__IO uint32_t revs_num;
 
 #endif /* CNC_ENCODER_H */

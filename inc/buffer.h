@@ -16,7 +16,7 @@
 /* Exported constants --------------------------------------------------------*/
 #define BUFF_SIZE 256
 /* Exported types ------------------------------------------------------------*/
-typedef struct{
+typedef struct {
     uint16_t head;
     uint16_t tail;
     uint16_t counter;

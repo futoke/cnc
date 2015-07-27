@@ -155,11 +155,11 @@ void SysTick_Handler(void)
 		}
 	}
 /******************************************************************************/
-	uint32_t enc_pos = TIM3->CNT;
-	uint8_t buff[20];
-	sprintf(buff, "%u", enc_pos);
-	usart_puts(buff);
-	usart_putch('\n');
+
+
+/******************************************************************************/
+
+	timer_service();
 }
 
 /**
@@ -213,11 +213,17 @@ void USART3_IRQHandler(void)
 }
 
 /**
-  * @}
-  */ 
+  * @brief  This function handles PD0 global interrupt request.
+  * @param  None
+  * @retval None
+  */
+void EXTI0_IRQHandler(void)
+{
+    if (EXTI_GetITStatus(EXTI_Line0) != RESET) {
 
-/**
-  * @}
-  */ 
+    	revs_num++;
+    	TIM3->CNT = 0;
+        EXTI_ClearITPendingBit(EXTI_Line0);
+    }
+}
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

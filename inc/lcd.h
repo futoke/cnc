@@ -64,6 +64,11 @@
 #define ADDRESS									0x27
 #define COLS									20
 #define ROWS									4
+#define BLANK_ROW								((uint8_t *)"                    ")
+#define ROW_1									0
+#define ROW_2									1
+#define ROW_3									2
+#define ROW_4									3
 /* Exported types ------------------------------------------------------------*/
 typedef struct {
 	uint8_t addr;
@@ -115,6 +120,11 @@ void lcd_send(uint8_t, uint8_t);
 void lcd_write_4bits(uint8_t);
 void lcd_expander_write(uint8_t);
 void lcd_pulse_enable(uint8_t);
+
+// Functions for 2004 display.
+void lcd_conf(void);
+void lcd_puts_row(uint8_t *str, uint8_t row);
+void lcd_clear_row(uint8_t row);
 /* Exported variables --------------------------------------------------------*/
 
 #endif /* CNC_LCD_H */

@@ -36,7 +36,6 @@ void GPIO_Configuration(void)
 
 	GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_TIM3);
 	GPIO_PinAFConfig(GPIOC, GPIO_PinSource7, GPIO_AF_TIM3);
-
 }
 
 /******************************************************************************/
@@ -61,12 +60,60 @@ void TIM3_Configuration(void)
     TIM_Cmd(TIM3, ENABLE);
 }
 
-
-void encoder_init(void)
+void Configure_PD0(void)
 {
-  RCC_Configuration();
-  GPIO_Configuration();
-  TIM3_Configuration();
+    /* Set variables used */
+    GPIO_InitTypeDef GPIO_InitStruct;
+    EXTI_InitTypeDef EXTI_InitStruct;
+    NVIC_InitTypeDef NVIC_InitStruct;
 
-  // TIM3->CNT contains current position
+    /* Enable clock for GPIOD */
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+    /* Enable clock for SYSCFG */
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+
+    /* Set pin as input */
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_0;
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+    /* Tell system that you will use PD0 for EXTI_Line0 */
+    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOD, EXTI_PinSource0);
+
+    /* PD0 is connected to EXTI_Line0 */
+    EXTI_InitStruct.EXTI_Line = EXTI_Line0;
+    /* Enable interrupt */
+    EXTI_InitStruct.EXTI_LineCmd = ENABLE;
+    /* Interrupt mode */
+    EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;
+    /* Triggers on rising and falling edge */
+    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising;
+    /* Add to EXTI */
+    EXTI_Init(&EXTI_InitStruct);
+
+    /* Add IRQ vector to NVIC */
+    /* PD0 is connected to EXTI_Line0, which has EXTI0_IRQn vector */
+    NVIC_InitStruct.NVIC_IRQChannel = EXTI0_IRQn;
+    /* Set priority */
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 0x00;
+    /* Set sub priority */
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0x00;
+    /* Enable interrupt */
+    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+    /* Add to NVIC */
+    NVIC_Init(&NVIC_InitStruct);
+}
+
+void encoder_conf(void)
+{
+	enc_pos = 0;
+
+	RCC_Configuration();
+	GPIO_Configuration();
+	TIM3_Configuration();
+
+	Configure_PD0(); // For encoder Z pin.
 }

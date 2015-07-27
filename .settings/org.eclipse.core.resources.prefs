@@ -4,4 +4,5 @@ encoding//inc/main.h=UTF-8
 encoding//src/i2c.c=UTF-8
 encoding//src/lcd.c=UTF-8
 encoding//src/main.c=UTF-8
+encoding//src/stm32f4xx_it.c=UTF-8
 encoding//src/syscalls.c=UTF-8

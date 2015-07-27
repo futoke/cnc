@@ -4,18 +4,88 @@ __IO uint32_t tim5_period;
 
 void tim_conf(void);
 
+void timer_service(void)
+{
+	uint8_t i;
+
+	for (i=0; i<MAX_TIMERS; i++) {
+		if (timer_queue[i].task == NULL) {
+			continue;
+		}
+		if (timer_queue[i].ticks_cnt) {
+			timer_queue[i].ticks_cnt--;
+		} else {
+			(timer_queue[i].task)();
+			timer_queue[i].ticks_cnt = timer_queue[i].ticks;
+		}
+	}
+}
+
+void set_timer_task(task_ptr_t task, ticks_t ticks)
+{
+	uint8_t i;
+
+	for (i=0; i<MAX_TIMERS; i++) {
+		if (timer_queue[i].task == NULL) {
+
+			timer_queue[i].task = task;
+			timer_queue[i].ticks = ticks;
+			timer_queue[i].ticks_cnt = ticks;
+
+			return;
+		}
+	}
+}
+
+void timer_conf(void)
+{
+	uint8_t i;
+
+	for (i=0; i<MAX_TIMERS; i++) {
+		timer_queue[i].task = NULL;
+		timer_queue[i].ticks = 0;
+		timer_queue[i].ticks_cnt = 0;
+	}
+
+	// Initialize SysTick timer with 1ms period.
+	if (SysTick_Config(SystemCoreClock / 1000)) {
+		while (1)
+			;
+	}
+}
+
+void print_revs(void)
+{
+	uint8_t buff[20];
+
+	sprintf((char*) buff, "%" PRIu32, revs_num);
+//	lcd_clear_row(ROW_2);
+	lcd_puts_row(buff, ROW_2);
+}
+
+void print_enc_pos(void)
+{
+	uint8_t buff[20];
+
+	if (enc_pos != TIM3->CNT) {
+		sprintf((char*) buff, "%" PRIu32, (TIM3->CNT >> 1));
+		lcd_clear_row(ROW_1);
+		lcd_puts_row(buff, ROW_1);
+
+		enc_pos = TIM3->CNT;
+	}
+}
+
 int main(void)
 {
 	tim_conf();
     usart_conf();
     lcd_conf();
-    encoder_init();
+    encoder_conf();
+    timer_conf();
 
-    // Initialize SysTick timer
-    if (SysTick_Config(SystemCoreClock / 1000)) {
-        while (1)
-            ;
-    }
+    set_timer_task(print_revs, 100);
+    set_timer_task( print_enc_pos, 10);
 
     STM_EVAL_LEDInit(LED3);
 //  STM_EVAL_LEDInit(LED4);

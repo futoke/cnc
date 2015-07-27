@@ -37,7 +37,6 @@
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-
 void NMI_Handler(void);
 void HardFault_Handler(void);
 void MemManage_Handler(void);
@@ -50,6 +49,7 @@ void SysTick_Handler(void);
 void TIM3_IRQHandler(void);
 void TIM5_IRQHandler(void);
 void USART3_IRQHandler(void);
+void EXTI0_IRQHandler(void);
 
 #endif /* __STM32F4xx_IT_H */
 
