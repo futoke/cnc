@@ -4,96 +4,116 @@ __IO uint32_t tim5_period;
 
 void tim_conf(void);
 
-void timer_service(void)
-{
-	uint8_t i;
+void print_enc_revs(void) {
+	uint8_t buff[10];
+	static uint8_t init = 1;
+	static uint32_t enc_revs_num_prev;
 
-	for (i=0; i<MAX_TIMERS; i++) {
-		if (timer_queue[i].task == NULL) {
-			continue;
-		}
-		if (timer_queue[i].ticks_cnt) {
-			timer_queue[i].ticks_cnt--;
-		} else {
-			(timer_queue[i].task)();
-			timer_queue[i].ticks_cnt = timer_queue[i].ticks;
-		}
+	if (init) {
+		lcd_clear_row(ROW_2);
+		lcd_puts_row((uint8_t *)"Revolutions: 0", ROW_2);
+		init = 0;
+	}
+
+	if (enc_revs_num != enc_revs_num_prev) {
+		sprintf((char*) buff, "%" PRIu32, enc_revs_num);
+		lcd_set_cursor(13, ROW_2); // Shifting for "Revolutions: "
+		lcd_puts(buff);
+		enc_revs_num_prev = enc_revs_num;
 	}
 }
 
-void set_timer_task(task_ptr_t task, ticks_t ticks)
-{
-	uint8_t i;
+void print_enc_velocity(void) {
+	uint8_t buff[10];
+	float velocity_rev_per_min;
+	static uint8_t init = 1;
+	static uint32_t enc_velocity_prev;
 
-	for (i=0; i<MAX_TIMERS; i++) {
-		if (timer_queue[i].task == NULL) {
+	if (init) {
+		lcd_clear_row(ROW_3);
+		lcd_puts_row((uint8_t *)"Velocity: 0", ROW_3);
+		init = 0;
+	}
 
-			timer_queue[i].task = task;
-			timer_queue[i].ticks = ticks;
-			timer_queue[i].ticks_cnt = ticks;
+	if (enc_velocity != enc_velocity_prev) {
+		// Measuring velocity 10 times per second (100 ms interval).
+		velocity_rev_per_min = ((float)enc_velocity / TICKS_PER_REV) * 600.0;
+		sprintf((char*) buff, "%5.1f", velocity_rev_per_min);
+		lcd_set_cursor(10, ROW_3); // Shifting for "Velocity: " (10 chars).
+		lcd_puts((uint8_t*)"          "); // 10 spaces for erase.
+		lcd_set_cursor(10, ROW_3);
+		lcd_puts(buff);
 
-			return;
-		}
+		enc_velocity_prev = enc_velocity;
 	}
 }
 
-void timer_conf(void)
-{
-	uint8_t i;
+void print_enc_pos(void) {
+	uint8_t buff[10];
+	static uint8_t init = 1;
+	static uint32_t enc_pos_prev;
 
-	for (i=0; i<MAX_TIMERS; i++) {
-		timer_queue[i].task = NULL;
-		timer_queue[i].ticks = 0;
-		timer_queue[i].ticks_cnt = 0;
-	}
-
-	// Initialize SysTick timer with 1ms period.
-	if (SysTick_Config(SystemCoreClock / 1000)) {
-		while (1)
-			;
-	}
-}
-
-void print_revs(void)
-{
-	uint8_t buff[20];
-
-	sprintf((char*) buff, "%" PRIu32, revs_num);
-//	lcd_clear_row(ROW_2);
-	lcd_puts_row(buff, ROW_2);
-}
-
-void print_enc_pos(void)
-{
-	uint8_t buff[20];
-
-	if (enc_pos != TIM3->CNT) {
-		sprintf((char*) buff, "%" PRIu32, (TIM3->CNT >> 1));
+	if (init) {
 		lcd_clear_row(ROW_1);
-		lcd_puts_row(buff, ROW_1);
+		lcd_puts_row((uint8_t *)"Position: 0", ROW_1);
+		init = 0;
+	}
 
-		enc_pos = TIM3->CNT;
+	if (enc_pos != enc_pos_prev) {
+		sprintf((char*) buff, "%" PRIu32, enc_pos);
+		lcd_set_cursor(10, ROW_1); // Shifting for "Position: ".
+		lcd_puts((uint8_t*)"          "); // 9 spaces for erase.
+		lcd_set_cursor(10, ROW_1);
+		lcd_puts(buff);
+
+		enc_pos_prev = enc_pos;
 	}
 }
 
-int main(void)
+void calculate_velocity(void)
 {
+	static uint32_t enc_ticks_prev, enc_pos_prev;
+	enc_pos = (TIM3->CNT >> 1);
+
+	enc_ticks += abs(enc_pos - enc_pos_prev);
+	enc_velocity = enc_ticks - enc_ticks_prev;
+
+	enc_pos_prev = enc_pos;
+	enc_ticks_prev = enc_ticks;
+
+}
+
+void cmd_echo(void) {
+	uint8_t ch;
+
+	if (!buff_empty(rx_buff)) {
+		ch = buff_get(&rx_buff);
+		cmd_add_ch(&cmd, ch);
+		usart_putch(ch);
+	}
+}
+
+int main(void) {
 	tim_conf();
-    usart_conf();
-    lcd_conf();
-    encoder_conf();
-    timer_conf();
+	usart_conf();
+	lcd_conf();
+	encoder_conf();
+	interval_conf();
 
-    set_timer_task(print_revs, 100);
-    set_timer_task( print_enc_pos, 10);
+	set_interval_task(print_enc_revs, 500);
+	set_interval_task(print_enc_pos, 500);
+	set_interval_task(print_enc_velocity, 100);
 
-    STM_EVAL_LEDInit(LED3);
+	set_interval_task(calculate_velocity, 100);
+	set_interval_task(cmd_echo, 1);
+
+	STM_EVAL_LEDInit(LED3);
 //  STM_EVAL_LEDInit(LED4);
 //  STM_EVAL_LEDInit(LED5);
 //  STM_EVAL_LEDInit(LED6);
 
-    printf("\n>>> ");
-    fflush(stdout);
+	printf("\n>>> ");
+	fflush(stdout);
 
 	while (1) {
 
@@ -115,8 +135,8 @@ int main(void)
 			fflush(stdout);
 
 			cmd_set_state(&cmd, NOT_READY);
-        }
-    }
+		}
+	}
 }
 
 //void gpio_conf(void)
@@ -153,8 +173,7 @@ int main(void)
 //	GPIO_Init(GPIOA, &GPIO_InitStruct);
 //}
 
-void tim_conf(void)
-{
+void tim_conf(void) {
 //	/* Enable clock for TIM4 */
 //	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
 //	/*
@@ -206,7 +225,7 @@ void tim_conf(void)
 //	/* Start count on TIM4 */
 //	TIM_Cmd(TIM5, ENABLE);
 
-	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 
 	/* Enable the TIM5 gloabal Interrupt */
@@ -232,29 +251,28 @@ void tim_conf(void)
 
 //void pwm_conf(void)
 //{
-	/* Common settings */
+/* Common settings */
 
-	/* PWM mode 2 = Clear on compare match */
-	/* PWM mode 1 = Set on compare match */
+/* PWM mode 2 = Clear on compare match */
+/* PWM mode 1 = Set on compare match */
 //	TIM_OCStruct.TIM_OCMode = TIM_OCMode_PWM2;
 //	TIM_OCStruct.TIM_OutputState = TIM_OutputState_Enable;
 //	TIM_OCStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
+/*
+ To get proper duty cycle, you have simple equation
 
-	/*
-	 To get proper duty cycle, you have simple equation
+ pulse_length = ((TIM_Period + 1) * DutyCycle) / 100 - 1
 
-	 pulse_length = ((TIM_Period + 1) * DutyCycle) / 100 - 1
+ where DutyCycle is in percent, between 0 and 100%
 
-	 where DutyCycle is in percent, between 0 and 100%
+ 25% duty cycle:     pulse_length = ((8399 + 1) * 25) / 100 - 1 = 2099
+ 50% duty cycle:     pulse_length = ((8399 + 1) * 50) / 100 - 1 = 4199
+ 75% duty cycle:     pulse_length = ((8399 + 1) * 75) / 100 - 1 = 6299
+ 100% duty cycle:    pulse_length = ((8399 + 1) * 100) / 100 - 1 = 8399
 
-	 25% duty cycle:     pulse_length = ((8399 + 1) * 25) / 100 - 1 = 2099
-	 50% duty cycle:     pulse_length = ((8399 + 1) * 50) / 100 - 1 = 4199
-	 75% duty cycle:     pulse_length = ((8399 + 1) * 75) / 100 - 1 = 6299
-	 100% duty cycle:    pulse_length = ((8399 + 1) * 100) / 100 - 1 = 8399
-
-	 Remember: if pulse_length is larger than TIM_Period, you will have output
-	 HIGH all the time
-	*/
+ Remember: if pulse_length is larger than TIM_Period, you will have output
+ HIGH all the time
+ */
 //	TIM_OCStruct.TIM_Pulse = 2099; /* 25% duty cycle */
 //	TIM_OC1Init(TIM4, &TIM_OCStruct);
 //	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Enable);
@@ -262,7 +280,6 @@ void tim_conf(void)
 //	TIM_OCStruct.TIM_Pulse = ((frequency + 1) * 50) / 100 - 1; /* 50% duty cycle */
 //	TIM_OC1Init(TIM5, &TIM_OCStruct);
 //	TIM_OC1PreloadConfig(TIM5, TIM_OCPreload_Enable);
-
 //	TIM_OCStruct.TIM_Pulse = 6299; /* 75% duty cycle */
 //	TIM_OC3Init(TIM4, &TIM_OCStruct);
 //	TIM_OC3PreloadConfig(TIM4, TIM_OCPreload_Enable);
@@ -271,4 +288,3 @@ void tim_conf(void)
 //	TIM_OC4Init(TIM4, &TIM_OCStruct);
 //	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
 //}
-

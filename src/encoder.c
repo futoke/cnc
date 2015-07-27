@@ -110,6 +110,9 @@ void Configure_PD0(void)
 void encoder_conf(void)
 {
 	enc_pos = 0;
+	enc_revs_num = 0;
+	enc_velocity = 0;
+	enc_ticks = 0;
 
 	RCC_Configuration();
 	GPIO_Configuration();

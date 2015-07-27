@@ -21,6 +21,8 @@ void TIM3_Configuration(void);
 void encoder_conf(void);
 /* Exported variables --------------------------------------------------------*/
 __IO uint32_t enc_pos;
-__IO uint32_t revs_num;
+__IO uint32_t enc_revs_num;
+__IO uint32_t enc_velocity;
+__IO uint32_t enc_ticks;
 
 #endif /* CNC_ENCODER_H */

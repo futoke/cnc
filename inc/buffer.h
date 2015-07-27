@@ -19,7 +19,7 @@
 typedef struct {
     uint16_t head;
     uint16_t tail;
-    uint16_t counter;
+    uint16_t cnt;
     uint8_t buff[BUFF_SIZE];
 } fifo_t;
 /* Exported macro ------------------------------------------------------------*/

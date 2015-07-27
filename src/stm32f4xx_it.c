@@ -122,16 +122,9 @@ uint8_t delay_cycles (uint32_t cycles)
   */
 void SysTick_Handler(void)
 {
-    uint8_t ch;
-    static uint8_t acc = 0;
+	static uint8_t acc = 0;
 
-    if (!buff_empty(rx_buff)) {
-        ch = buff_get(&rx_buff);
-        cmd_add_ch(&cmd, ch);
-        usart_putch(ch);
-    }
-/******************************************************************************/
-	if (acc) {
+    if (acc) {
 		if (tim5_period > 1221) {
 			if (delay_cycles(8)) {
 				TIM_SetCounter(TIM5, 1);
@@ -155,11 +148,7 @@ void SysTick_Handler(void)
 		}
 	}
 /******************************************************************************/
-
-
-/******************************************************************************/
-
-	timer_service();
+	interval_service();
 }
 
 /**
@@ -221,8 +210,8 @@ void EXTI0_IRQHandler(void)
 {
     if (EXTI_GetITStatus(EXTI_Line0) != RESET) {
 
-    	revs_num++;
-    	TIM3->CNT = 0;
+    	enc_revs_num++;
+//    	TIM3->CNT = 0;
         EXTI_ClearITPendingBit(EXTI_Line0);
     }
 }
