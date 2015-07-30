@@ -1,6 +1,7 @@
 eclipse.preferences.version=1
 encoding//inc/lcd.h=UTF-8
 encoding//inc/main.h=UTF-8
+encoding//lib/inc/stm32f4xx.h=UTF-8
 encoding//src/i2c.c=UTF-8
 encoding//src/lcd.c=UTF-8
 encoding//src/main.c=UTF-8

@@ -16,20 +16,20 @@
 
 void delay_ms(uint32_t ms)
 {
-	RCC_ClocksTypeDef RCC_Clocks;
-	RCC_GetClocksFreq(&RCC_Clocks);
-
-	__IO uint32_t cnt = (RCC_Clocks.HCLK_Frequency / 10000) * ms;
-	while (cnt--)
-		;
+    RCC_ClocksTypeDef RCC_Clocks;
+    RCC_GetClocksFreq(&RCC_Clocks);
+    
+    __IO uint32_t cnt = (RCC_Clocks.HCLK_Frequency / 10000) * ms;
+    while (cnt--)
+        ;
 }
 
 void delay_us(uint32_t us)
 {
-	RCC_ClocksTypeDef RCC_Clocks;
-	RCC_GetClocksFreq(&RCC_Clocks);
-
-	__IO uint32_t cnt = (RCC_Clocks.HCLK_Frequency / 10000000) * us;
-	while (cnt--)
-		;
+    RCC_ClocksTypeDef RCC_Clocks;
+    RCC_GetClocksFreq(&RCC_Clocks);
+    
+    __IO uint32_t cnt = (RCC_Clocks.HCLK_Frequency / 10000000) * us;
+    while (cnt--)
+        ;
 }

@@ -22,30 +22,31 @@ extern int errno;
 /*
  Переменные среды - пустой список.
  */
-char *__env[1] = { 0 };
+char *__env[1] = {0};
 char **environ = __env;
 
 // exit - экстренный выход. В качестве выхода - зацикливаемся.
 void _exit(__attribute__((unused)) int status)
 {
-	while (1)
-		;
+    while (1)
+        ;
 }
 
 // close - закрытие файла - возвращаем ошибку
 int _close(__attribute__((unused)) int file)
 {
-	return -1;
+    return -1;
 }
 /*
  execve - передача управления новому процессу - процессов нет -> возвращаем ошибку.
  */
-int _execve(__attribute__((unused)) char *name,
-			__attribute__((unused)) char **argv,
-			__attribute__((unused))char **env)
+int _execve(
+    __attribute__((unused)) char *name,
+    __attribute__((unused)) char **argv,
+    __attribute__((unused))char **env)
 {
-	errno = ENOMEM;
-	return -1;
+    errno = ENOMEM;
+    return -1;
 }
 
 /*
@@ -53,8 +54,8 @@ int _execve(__attribute__((unused)) char *name,
  */
 int _fork()
 {
-	errno = EAGAIN;
-	return -1;
+    errno = EAGAIN;
+    return -1;
 }
 
 /*
@@ -62,8 +63,8 @@ int _fork()
  */
 int _fstat(__attribute__((unused)) int file, struct stat *st)
 {
-	st->st_mode = S_IFCHR;
-	return 0;
+    st->st_mode = S_IFCHR;
+    return 0;
 }
 
 /*
@@ -72,7 +73,7 @@ int _fstat(__attribute__((unused)) int file, struct stat *st)
 
 int _getpid()
 {
-	return 1;
+    return 1;
 }
 
 /*
@@ -80,16 +81,16 @@ int _getpid()
  */
 int _isatty(int file)
 {
-	switch (file) {
-		case STDOUT_FILENO:
-		case STDERR_FILENO:
-		case STDIN_FILENO:
-			return 1;
-		default:
-			//errno = ENOTTY;
-			errno = EBADF;
-			return 0;
-	}
+    switch (file) {
+        case STDOUT_FILENO:
+        case STDERR_FILENO:
+        case STDIN_FILENO:
+            return 1;
+        default:
+            //errno = ENOTTY;
+            errno = EBADF;
+            return 0;
+    }
 }
 
 /*
@@ -97,8 +98,8 @@ int _isatty(int file)
  */
 int _kill(__attribute__((unused)) int pid, __attribute__((unused)) int sig)
 {
-	errno = EINVAL;
-	return (-1);
+    errno = EINVAL;
+    return (-1);
 }
 
 /*
@@ -107,18 +108,19 @@ int _kill(__attribute__((unused)) int pid, __attribute__((unused)) int sig)
 
 int _link(__attribute__((unused)) char *old, __attribute__((unused)) char *new)
 {
-	errno = EMLINK;
-	return -1;
+    errno = EMLINK;
+    return -1;
 }
 
 /*
  lseek - установить позицию в файле
  */
-int _lseek(__attribute__((unused)) int file,
-		   __attribute__((unused)) int ptr,
-		   __attribute__((unused)) int dir)
+int _lseek(
+    __attribute__((unused)) int file,
+    __attribute__((unused)) int ptr,
+    __attribute__((unused)) int dir)
 {
-	return 0;
+    return 0;
 }
 
 /*
@@ -126,26 +128,26 @@ int _lseek(__attribute__((unused)) int file,
  */
 caddr_t _sbrk(int incr)
 {
-	extern char _ebss;
-	static char *heap_end;
-	char *prev_heap_end;
-
-	if (heap_end == 0) {
-		heap_end = &_ebss;
-	}
-	prev_heap_end = heap_end;
-
-	char * stack = (char*) __get_MSP();
-	if (heap_end + incr > stack) {
-		_write(STDERR_FILENO, "Heap and stack collision\n", 25);
-		errno = ENOMEM;
-		return (caddr_t) -1;
-		//abort ();
-	}
-
-	heap_end += incr;
-	return (caddr_t) prev_heap_end;
-
+    extern char _ebss;
+    static char *heap_end;
+    char *prev_heap_end;
+    
+    if (heap_end == 0) {
+        heap_end = &_ebss;
+    }
+    prev_heap_end = heap_end;
+    
+    char * stack = (char*)__get_MSP();
+    if (heap_end + incr > stack) {
+        _write(STDERR_FILENO, "Heap and stack collision\n", 25);
+        errno = ENOMEM;
+        return (caddr_t)-1;
+        //abort ();
+    }
+    
+    heap_end += incr;
+    return (caddr_t)prev_heap_end;
+    
 }
 
 /*
@@ -153,36 +155,36 @@ caddr_t _sbrk(int incr)
  */
 int _read(int file, char *ptr, int len)
 {
-	int num;
-	char c;
-
-	switch (file) {
-		case STDIN_FILENO:
-			for (num = 0; num < len; num++) {
-				do {
-					c = usart_getch();
-				} while (c == false);
-
-				*ptr++ = c;
+    int num;
+    char c;
+    
+    switch (file) {
+        case STDIN_FILENO:
+            for (num = 0; num < len; num++) {
+                do {
+                    c = usart_getch();
+                } while (c == false);
+                
+                *ptr++ = c;
 #ifdef ECHOBACK
-				usart_putch(c);
-				// lcd_write(c);
+                usart_putch(c);
+                // lcd_write(c);
 #endif
-				if (c == '\r' && num <= (len - 2)) { /* 0x0D */
-					*ptr = '\n'; /* 0x0A */
+                if (c == '\r' && num <= (len - 2)) { /* 0x0D */
+                    *ptr = '\n'; /* 0x0A */
 #ifdef ECHOBACK
-					usart_putch('\n'); /* 0x0A */
-					//lcd_write('\n');
+                    usart_putch('\n'); /* 0x0A */
+                    //lcd_write('\n');
 #endif
-					return num + 2;
-				}
-			}
-			break;
-		default:
-			errno = EBADF;
-			return -1;
-	}
-	return num;
+                    return num + 2;
+                }
+            }
+            break;
+        default:
+            errno = EBADF;
+            return -1;
+    }
+    return num;
 }
 
 /*
@@ -190,16 +192,16 @@ int _read(int file, char *ptr, int len)
  */
 int _stat(__attribute__((unused)) const char *filepath, struct stat *st)
 {
-	st->st_mode = S_IFCHR;
-	return 0;
+    st->st_mode = S_IFCHR;
+    return 0;
 }
 
 /*
  times - временная информация о процессе (сколько тиков: системных, процессорных и т.д.)
  */
-clock_t _times(__attribute__((unused)) struct tms *buf)
+clock_t _times(__attribute__((unused))  struct tms *buf)
 {
-	return -1;
+    return -1;
 }
 
 /*
@@ -207,8 +209,8 @@ clock_t _times(__attribute__((unused)) struct tms *buf)
  */
 int _unlink(__attribute__((unused)) char *name)
 {
-	errno = ENOENT;
-	return -1;
+    errno = ENOENT;
+    return -1;
 }
 
 /*
@@ -216,8 +218,8 @@ int _unlink(__attribute__((unused)) char *name)
  */
 int _wait(__attribute__((unused)) int *status)
 {
-	errno = ECHILD;
-	return -1;
+    errno = ECHILD;
+    return -1;
 }
 
 /*
@@ -225,23 +227,23 @@ int _wait(__attribute__((unused)) int *status)
  */
 int _write(int file, char *ptr, int len)
 {
-	int n;
-
-	switch (file) {
-	case STDOUT_FILENO: /* stderr */
-		for (n = 0; n < len; n++) {
-			usart_putch((uint8_t) *ptr++);
-			//lcd_write((uint8_t) *ptr++);
-		}
-		break;
-	case STDERR_FILENO:
-		for (n = 0; n < len; n++) {
-			lcd_putch((uint8_t) *ptr++);
-		}
-		break;
-	default:
-		errno = EBADF;
-		return -1;
-	}
-	return len;
+    int n;
+    
+    switch (file) {
+        case STDOUT_FILENO: /* stderr */
+            for (n = 0; n < len; n++) {
+                usart_putch((uint8_t)*ptr++);
+                //lcd_write((uint8_t) *ptr++);
+            }
+            break;
+        case STDERR_FILENO:
+            for (n = 0; n < len; n++) {
+                lcd_putch((uint8_t)*ptr++);
+            }
+            break;
+        default:
+            errno = EBADF;
+            return -1;
+    }
+    return len;
 }

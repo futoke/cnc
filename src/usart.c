@@ -22,11 +22,11 @@ void usart_conf(void)
     buff_init(&rx_buff);
     buff_init(&tx_buff);
     cmd_init(&cmd);
-
+    
     // Interrupts init
     USART_InitTypeDef USART_InitStructure;
     NVIC_InitTypeDef NVIC_InitStructure;
-
+    
     /* USARTx configured as follows:
      - BaudRate = 115200 baud
      - Word Length = 8 Bits
@@ -39,18 +39,18 @@ void usart_conf(void)
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
     USART_InitStructure.USART_StopBits = USART_StopBits_1;
     USART_InitStructure.USART_Parity = USART_Parity_No;
-    USART_InitStructure.USART_HardwareFlowControl = \
-            USART_HardwareFlowControl_None;
+    USART_InitStructure.USART_HardwareFlowControl =
+    USART_HardwareFlowControl_None;
     USART_InitStructure.USART_Mode = (USART_Mode_Rx | USART_Mode_Tx);
-
+    
     NVIC_InitStructure.NVIC_IRQChannel = EVAL_COM1_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-
+    
     STM_EVAL_COMInit(COM1, &USART_InitStructure);
     NVIC_Init(&NVIC_InitStructure);
-
+    
     USART_ITConfig(EVAL_COM1, USART_IT_RXNE, ENABLE);
 }
 
@@ -72,6 +72,6 @@ uint8_t usart_getch(void)
 
 void usart_puts(uint8_t *str)
 {
-  while (*str)
-    usart_putch(*str++);
+    while (*str)
+        usart_putch(*str++);
 }

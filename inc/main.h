@@ -24,6 +24,8 @@
 #define TICKS_PER_REV	2000.0
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
+float32_t isqrtf(float32_t num);
+void tim_conf(void);
 /* Exported variables ------------------------------------------------------- */
 
 #endif /* CNC_MAIN_H */
