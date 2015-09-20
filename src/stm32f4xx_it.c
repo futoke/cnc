@@ -162,8 +162,6 @@ void TIM3_IRQHandler(void)
 {
 }
 
-__IO uint32_t per[] = {17397, 13349, 11254, 9915, 8964, 8243, 7672, 7206, 6816, 6483, 6194, 5941, 5716, 5516, 5335, 5170, 5020, 4883, 4756, 4638, 4529, 4427, 4332, 4243, 4159, 4080, 4005, 3934, 3867, 3803, 3742, 3684, 3628, 3575, 3525, 3476, 3429, 3385, 3341, 3300, 3260, 3221, 3184, 3148, 3113, 3080, 3047, 3015, 2985, 2955, 2926, 2898, 2871, 2845, 2819, 2794, 2769, 2746, 2722, 2700, 2678, 2656, 2635, 2615, 2595, 2575, 2556, 2537, 2519, 2501, 2484, 2466, 2450, 2433, 2417, 2401, 2385, 2370, 2355, 2341, 2326, 2312, 2298, 2285, 2271, 2258, 2245, 2232, 2220, 2207, 2195, 2183, 2172, 2160, 2149, 2138, 2127, 2116, 2105, 2095, 2084, 2074, 2064, 2054, 2045, 2035, 2025, 2016, 2007};
-
 /**
  * @brief  This function handles TIM5 global interrupt request.
  * @param  None
@@ -171,27 +169,37 @@ __IO uint32_t per[] = {17397, 13349, 11254, 9915, 8964, 8243, 7672, 7206, 6816, 
  */
 void TIM5_IRQHandler(void)
 {
-    static uint32_t cnt = 0;
-
-    if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
-//        __IO uint32_t res;
+//    static uint32_t cnt = 0;
+//
+//    uint32_t current_period;
+//    uint32_t begin_period = 1052784;
+//    uint32_t end_period = 2000;
+//
+//    if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
+//        STM_EVAL_LEDToggle(LED3);
+//
+//        if (begin_period > end_period) {
+//            current_period = begin_period * (isqrtf(cnt + 1) - isqrtf(cnt));
+//            if (current_period > end_period) {
+//                cnt++;
+//            }
+//        } else if (begin_period < end_period) {
+//            current_period = begin_period * (isqrtf(cnt + 1) + isqrtf(cnt));
+//            if (current_period < end_period) {
+//                cnt++;
+//            }
+//        } else {
+//            current_period = begin_period;
+//        }
+//
+//        TIM_SetCounter(TIM5, 1);
+//        TIM_SetAutoreload(TIM5, current_period);
+//
+    if (y_steps > 0) {
         STM_EVAL_LEDToggle(LED3);
-        
-//        res = (uint32_t)((42000 - 1) * (isqrtf(cnt + 1) - isqrtf(cnt)) + 0.5);
-
-//        res = 42000 * (isqrtf(cnt + 1) - isqrtf(cnt));
-//        printf("You enter: %lu", res);
-
-        uint32_t period = 1000000 * (isqrtf(cnt + 1) - isqrtf(cnt));
-        TIM_SetCounter(TIM5, 1);
-        TIM_SetAutoreload(TIM5, period);
-
-        if (period > 2000) {
-            cnt++;
-        }
-
-        TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
+        y_steps--;
     }
+    TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
 }
 
 /**

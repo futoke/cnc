@@ -59,6 +59,7 @@ void TIM3_Configuration(void)
     TIM_Cmd(TIM3, ENABLE);
 }
 
+// For revolution counter
 void Configure_PD0(void)
 {
     /* Set variables used */

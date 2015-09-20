@@ -19,6 +19,9 @@
 #include "cmd.h"
 
 /* Exported types ------------------------------------------------------------*/
+typedef enum {
+    CW = 0, CCW = !CW
+} dir_t;
 /* Exported constants --------------------------------------------------------*/
 #define STEPS_PER_REV	200
 #define TICKS_PER_REV	2000.0
@@ -27,5 +30,7 @@
 float32_t isqrtf(float32_t num);
 void tim_conf(void);
 /* Exported variables ------------------------------------------------------- */
+__IO uint32_t y_steps;
+// dir_t y_dir = CW;
 
 #endif /* CNC_MAIN_H */

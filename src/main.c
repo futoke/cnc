@@ -1,7 +1,5 @@
 #include "main.h"
 
-__IO uint32_t tim5_period;
-
 float32_t isqrtf(float32_t num)
 {
     float32_t result;
@@ -104,23 +102,66 @@ void cmd_echo(void)
 
 void cmd_processor(void)
 {
-    uint32_t res;
+    int32_t number;
+    uint8_t number_str[16];
+    uint8_t prefix;
+    uint8_t char_counter = 0;
+
     if (cmd_get_state(&cmd) == READY) {
         
-        printf(">>> ");
-        fflush(stdout);
+//        printf(">>> ");
+//        fflush(stdout);
         
-        if (sscanf((char*)cmd.text, "%lu", &res) == 1) {
-            // Maybe I need to disable the interrupt from timer here...
-            TIM_SetCounter(TIM5, 1);
-            TIM_SetAutoreload(TIM5, res);
-            printf("You enter: %s", cmd.text);
-//				fprintf(stderr, "You enter: %s", cmd.text);
+        if (y_steps == 0) { // No motion.
+
+            while (cmd.text[char_counter]) {
+                if (char_counter == 0) {
+                    prefix = cmd.text[char_counter];
+                } else {
+                    number_str[char_counter - 1] = cmd.text[char_counter];
+                }
+                char_counter++;
+            }
+            number_str[char_counter - 1] = '\0';
+
+            if (sscanf((char*)number_str, "%" PRIi32, &number) != 1) {
+                printf("You enter something wrong... ");
+            } else {
+                switch (prefix) {
+                    case 'F':
+                    case 'f':
+                        if (number > 0) {
+                            // Maybe I need to disable the interrupt from timer here...
+                            TIM_SetCounter(TIM5, 1);
+                            TIM_SetAutoreload(TIM5, number);
+                            printf("Set feedrate: %" PRIi32 " parrots.", number);
+                        } else {
+                            printf("Feedrate should be positive. "
+                                   "You enter: %" PRIi32".", number);
+                        }
+                        break;
+                    case 'Y':
+                    case 'y':
+                        if (number > 0) { // CW.
+                            STM_EVAL_LEDOn(LED5);
+                        } else { // CCW.
+                            STM_EVAL_LEDOff(LED5);
+                        }
+                        y_steps = abs(number);
+                        printf(
+                            "Set Y relative position: %" PRIi32 " microsteps.",
+                            number
+                        );
+                        break;
+                    default:
+                        printf("Unsupported command '%c'.", (char)prefix);
+                        break;
+                }
+            }
         } else {
-            printf("You enter something wrong... ");
-//				fprintf(stderr, "You enter something wrong... ");
+            printf("Motion is not complete!");
         }
-        
+
         printf("\n>>> ");
         fflush(stdout);
         
@@ -130,12 +171,19 @@ void cmd_processor(void)
 
 int main(void)
 {
+    y_steps = 0; //!!!!!!!!!
+
     tim_conf();
     usart_conf();
     lcd_conf();
     encoder_conf();
     interval_conf();
-    
+
+    STM_EVAL_LEDInit(LED3); // Step pin PD13 for Y axis.
+//    STM_EVAL_LEDInit(LED4);
+    STM_EVAL_LEDInit(LED5); // Dir pin PD14 for Y axis.
+//    STM_EVAL_LEDInit(LED6);
+
     set_interval_task(cmd_processor, 1);
     
     set_interval_task(print_enc_revs, 500);
@@ -144,12 +192,7 @@ int main(void)
     
     set_interval_task(calculate_velocity, 100);
     set_interval_task(cmd_echo, 1);
-    
-    STM_EVAL_LEDInit(LED3);
-//  STM_EVAL_LEDInit(LED4);
-//  STM_EVAL_LEDInit(LED5);
-//  STM_EVAL_LEDInit(LED6);
-    
+
     while (1)
         ;
 }
