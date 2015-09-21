@@ -195,6 +195,7 @@ void TIM5_IRQHandler(void)
 //        TIM_SetCounter(TIM5, 1);
 //        TIM_SetAutoreload(TIM5, current_period);
 //
+
     if (y_steps > 0) {
         STM_EVAL_LEDToggle(LED3);
         y_steps--;

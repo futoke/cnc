@@ -23,9 +23,12 @@ typedef enum {
     CW = 0, CCW = !CW
 } dir_t;
 /* Exported constants --------------------------------------------------------*/
-#define STEPS_PER_REV	200
-#define TICKS_PER_REV	2000.0
+#define STEPS_PER_REV	    400
+#define MICROSTEPS          16
+#define PITCH               5.0
+#define TICKS_PER_REV	    2000.0
 /* Exported macro ------------------------------------------------------------*/
+#define MICROSTEPS_TO_MM(x) (((x) * PITCH) / (STEPS_PER_REV * MICROSTEPS))
 /* Exported functions ------------------------------------------------------- */
 float32_t isqrtf(float32_t num);
 void tim_conf(void);

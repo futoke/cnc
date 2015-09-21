@@ -147,10 +147,10 @@ void cmd_processor(void)
                         } else { // CCW.
                             STM_EVAL_LEDOff(LED5);
                         }
-                        y_steps = abs(number);
+                        y_steps = (abs(number) << 1);
                         printf(
-                            "Set Y relative position: %" PRIi32 " microsteps.",
-                            number
+                            "Set Y relative position: %" PRIi32 " microsteps "
+                            "(%.3f mm)", number, MICROSTEPS_TO_MM(number)
                         );
                         break;
                     default:
@@ -175,8 +175,8 @@ int main(void)
 
     tim_conf();
     usart_conf();
-    lcd_conf();
-    encoder_conf();
+//    lcd_conf();
+//    encoder_conf();
     interval_conf();
 
     STM_EVAL_LEDInit(LED3); // Step pin PD13 for Y axis.
@@ -186,11 +186,11 @@ int main(void)
 
     set_interval_task(cmd_processor, 1);
     
-    set_interval_task(print_enc_revs, 500);
-    set_interval_task(print_enc_pos, 500);
-    set_interval_task(print_enc_velocity, 100);
-    
-    set_interval_task(calculate_velocity, 100);
+//    set_interval_task(print_enc_revs, 500);
+//    set_interval_task(print_enc_pos, 500);
+//    set_interval_task(print_enc_velocity, 100);
+//
+//    set_interval_task(calculate_velocity, 100);
     set_interval_task(cmd_echo, 1);
 
     while (1)
