@@ -24,8 +24,12 @@ void cmd_init(__IO cmd_t *cmd)
 
 void cmd_add_ch(__IO cmd_t *cmd, uint8_t ch)
 {
-    if (ch != '\n' && ch != '\r') {
-        cmd->text[cmd->cnt++] = ch;
+    if (ch != '\n' && ch != '\r') { // Wait Enter.
+        if (ch == 8) { // Backspace.
+            cmd->cnt--;
+        } else {
+            cmd->text[cmd->cnt++] = ch;
+        }
     } else {
         cmd->text[cmd->cnt++] = '\0';
         cmd->state = READY;

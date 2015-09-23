@@ -131,9 +131,12 @@ void cmd_processor(void)
                     case 'F':
                     case 'f':
                         if (number > 0) {
+                            // Load desire period (max block speed).
+                            y_period = (uint32_t)number;
+                            y_curr_period = BEGIN_PERIOD;
                             // Maybe I need to disable the interrupt from timer here...
                             TIM_SetCounter(TIM5, 1);
-                            TIM_SetAutoreload(TIM5, number);
+                            TIM_SetAutoreload(TIM5, y_curr_period);
                             printf("Set feedrate: %" PRIi32 " parrots.", number);
                         } else {
                             printf("Feedrate should be positive. "
@@ -171,7 +174,9 @@ void cmd_processor(void)
 
 int main(void)
 {
-    y_steps = 0; //!!!!!!!!!
+    y_steps = 0; // !!!!!!!!!
+    y_period = 2000;
+    y_curr_period = BEGIN_PERIOD;
 
     tim_conf();
     usart_conf();
@@ -212,7 +217,7 @@ void tim_conf(void)
     /* TIM5 clock enable */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
     /* Time base configuration */
-    TIM_TimeBaseStructure.TIM_Period = 42000 - 1;
+    TIM_TimeBaseStructure.TIM_Period = y_curr_period - 1; // !!!!!!!!!!!!!!
     TIM_TimeBaseStructure.TIM_Prescaler = 0; // 4MHz
     TIM_TimeBaseStructure.TIM_ClockDivision = 0;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;

@@ -27,6 +27,7 @@ typedef enum {
 #define MICROSTEPS          16
 #define PITCH               5.0
 #define TICKS_PER_REV	    2000.0
+#define BEGIN_PERIOD        420000
 /* Exported macro ------------------------------------------------------------*/
 #define MICROSTEPS_TO_MM(x) (((x) * PITCH) / (STEPS_PER_REV * MICROSTEPS))
 /* Exported functions ------------------------------------------------------- */
@@ -34,6 +35,8 @@ float32_t isqrtf(float32_t num);
 void tim_conf(void);
 /* Exported variables ------------------------------------------------------- */
 __IO uint32_t y_steps;
+__IO uint32_t y_period;
+__IO uint32_t y_curr_period;
 // dir_t y_dir = CW;
 
 #endif /* CNC_MAIN_H */
