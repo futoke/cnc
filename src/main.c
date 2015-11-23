@@ -102,29 +102,32 @@ void cmd_echo(void)
 
 void cmd_processor(void)
 {
-    int32_t number;
-    uint8_t number_str[16];
+    float64_t number;
+    uint8_t cmd_buffer[CMD_BUFFER];
+
     uint8_t prefix;
-    uint8_t char_counter = 0;
+    uint8_t char_cnt = 0;
 
     if (cmd_get_state(&cmd) == READY) {
         
 //        printf(">>> ");
 //        fflush(stdout);
         
-        if (y_steps == 0) { // No motion.
+        if (y_motion.state == NO_MOTION) {
 
-            while (cmd.text[char_counter]) {
-                if (char_counter == 0) {
-                    prefix = cmd.text[char_counter];
+            while (cmd.text[char_cnt]) {
+                if (char_cnt == 0) {
+                    prefix = cmd.text[char_cnt];
                 } else {
-                    number_str[char_counter - 1] = cmd.text[char_counter];
+                    cmd_buffer[char_cnt - 1] = cmd.text[char_cnt];
                 }
-                char_counter++;
+                char_cnt++;
             }
-            number_str[char_counter - 1] = '\0';
 
-            if (sscanf((char*)number_str, "%" PRIi32, &number) != 1) {
+            cmd_buffer[char_cnt - 1] = '\0';
+
+//            if (sscanf((char*)number_str, "%" PRIi32, &number) != 1) {
+            if (sscanf((char*)cmd_buffer, "%lf", &number) != 1) {
                 printf("You enter something wrong... ");
             } else {
                 switch (prefix) {
@@ -132,29 +135,21 @@ void cmd_processor(void)
                     case 'f':
                         if (number > 0) {
                             // Load desire period (max block speed).
-                            y_period = (uint32_t)number;
-                            y_curr_period = BEGIN_PERIOD;
+                            motion_set_vel(&y_motion, number);
                             // Maybe I need to disable the interrupt from timer here...
-                            TIM_SetCounter(TIM5, 1);
-                            TIM_SetAutoreload(TIM5, y_curr_period);
-                            printf("Set feedrate: %" PRIi32 " parrots.", number);
+                            TIM_SetCounter(TIM5, 0);
+                            TIM_SetAutoreload(TIM5, y_motion.period);
+                            printf("Set feedrate: %.3lf mm/min.", number);
                         } else {
                             printf("Feedrate should be positive. "
-                                   "You enter: %" PRIi32".", number);
+                                "You enter: %.3lf.", number);
                         }
                         break;
                     case 'Y':
                     case 'y':
-                        if (number > 0) { // CW.
-                            STM_EVAL_LEDOn(LED5);
-                        } else { // CCW.
-                            STM_EVAL_LEDOff(LED5);
-                        }
-                        y_steps = (abs(number) << 1);
-                        printf(
-                            "Set Y relative position: %" PRIi32 " microsteps "
-                            "(%.3f mm)", number, MICROSTEPS_TO_MM(number)
-                        );
+                        STM_EVAL_LEDOn(LED4); // Signal.
+                        motion_goto_pos(&y_motion, number);
+                        printf("Set Y relative position: %.3lf mm", number);
                         break;
                     default:
                         printf("Unsupported command '%c'.", (char)prefix);
@@ -172,11 +167,125 @@ void cmd_processor(void)
     }
 }
 
+void motion_init(__IO motion_t *motion)
+{
+    motion->dir = PLUS;
+    motion->state = NO_MOTION;
+    motion->period = MM_MIN_TO_PERIOD(100);
+    motion->accel_steps = 0;
+    motion->stright_steps = 0;
+    motion->decel_steps = 0;
+}
+
+void motion_goto_pos(__IO motion_t *motion, float32_t rel_position)
+{
+    uint32_t num_steps;
+    uint32_t accel_steps;
+    uint32_t velocity;         // Steps per sec.
+
+    if (rel_position > 0) {
+        motion->dir = PLUS;
+        STM_EVAL_LEDOn(LED5);
+    } else {
+        motion->dir = MINUS;
+        STM_EVAL_LEDOff(LED5);
+    }
+    num_steps = MM_TO_STEPS(abs(rel_position));
+
+    velocity = BASE_FREQ / motion->period;
+    accel_steps = (velocity * velocity) / (2 * ACCELERATION);
+
+    if (num_steps < (2 * accel_steps)) {
+        if (num_steps & 1) { // Odd number;
+            motion->stright_steps = 1;
+        } else {
+            motion->stright_steps = 0;
+        }
+        motion->accel_steps = motion->decel_steps = num_steps / 2;
+    } else {
+        motion->stright_steps = num_steps - (2 * accel_steps);
+        motion->accel_steps = motion->decel_steps = accel_steps;
+    }
+
+    motion->state = MOTION;
+}
+
+void motion_set_vel(__IO motion_t *motion, float32_t velocity)
+{
+    motion->period = MM_MIN_TO_PERIOD(velocity);
+}
+
+void motion_step(__IO motion_t *motion)
+{
+    static edge_t edge = FALLING;
+    static uint32_t cnt = 0;
+
+    switch (motion->state) {
+        case MOTION:
+            motion->state = ACCEL;
+            break;
+        case ACCEL:
+            if (cnt < motion->accel_steps) {
+                if (edge == FALLING) {
+                    STM_EVAL_LEDOn(LED3);
+                    TIM_SetCounter(TIM5, 1);
+                    TIM_SetAutoreload(
+                    TIM5, BEGIN_PERIOD * (isqrtf(cnt + 1) - isqrtf(cnt)));
+                    cnt++;
+                    edge = RISING;
+                } else {
+                    STM_EVAL_LEDOff(LED3);      // FIXME: Custom port!!!
+                    edge = FALLING;
+                }
+            } else {
+                cnt = 0;
+                TIM_SetCounter(TIM5, 1);
+                TIM_SetAutoreload(TIM5, motion->period);
+                motion->state = STRIGHT;
+            }
+            break;
+        case STRIGHT:
+            if (motion->stright_steps) {
+                if (edge == FALLING) {
+                    STM_EVAL_LEDOn(LED3);
+                    motion->stright_steps--;
+                    edge = RISING;
+                } else {
+                    STM_EVAL_LEDOff(LED3);      // FIXME: Custom port!!!
+                    edge = FALLING;
+                }
+            } else {
+                motion->state = DECEL;
+            }
+            break;
+        case DECEL:
+            if (motion->decel_steps) {
+                if (edge == FALLING) {
+                    STM_EVAL_LEDOn(LED3);
+                    TIM_SetCounter(TIM5, 1);
+                    TIM_SetAutoreload(
+                        TIM5,
+                        BEGIN_PERIOD * (isqrtf(motion->decel_steps + 1) - isqrtf(
+                            motion->decel_steps)));
+                    motion->decel_steps--;
+                    edge = RISING;
+                } else {
+                    STM_EVAL_LEDOff(LED3);      // FIXME: Custom port!!!
+                    edge = FALLING;
+                }
+            } else {
+                STM_EVAL_LEDOff(LED3);
+                motion->state = NO_MOTION;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 int main(void)
 {
-    y_steps = 0; // !!!!!!!!!
-    y_period = 2000;
-    y_curr_period = BEGIN_PERIOD;
+    motion_init(&y_motion);
 
     tim_conf();
     usart_conf();
@@ -185,7 +294,7 @@ int main(void)
     interval_conf();
 
     STM_EVAL_LEDInit(LED3); // Step pin PD13 for Y axis.
-//    STM_EVAL_LEDInit(LED4);
+    STM_EVAL_LEDInit(LED4);
     STM_EVAL_LEDInit(LED5); // Dir pin PD14 for Y axis.
 //    STM_EVAL_LEDInit(LED6);
 
@@ -217,8 +326,8 @@ void tim_conf(void)
     /* TIM5 clock enable */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
     /* Time base configuration */
-    TIM_TimeBaseStructure.TIM_Period = y_curr_period - 1; // !!!!!!!!!!!!!!
-    TIM_TimeBaseStructure.TIM_Prescaler = 0; // 4MHz
+    TIM_TimeBaseStructure.TIM_Period = MM_MIN_TO_PERIOD(100);
+    TIM_TimeBaseStructure.TIM_Prescaler = 0; // 42MHz
     TIM_TimeBaseStructure.TIM_ClockDivision = 0;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
     TIM_TimeBaseInit(TIM5, &TIM_TimeBaseStructure);

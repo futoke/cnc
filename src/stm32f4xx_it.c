@@ -194,24 +194,32 @@ void TIM5_IRQHandler(void)
 //        TIM_SetCounter(TIM5, 1);
 //        TIM_SetAutoreload(TIM5, current_period);
 //
-    static uint32_t y_step_cnt = 0;
+//    static uint32_t y_step_cnt = 0;
+
 
     if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
         TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
 
-        if (y_step_cnt < y_steps) {
-            STM_EVAL_LEDToggle(LED3);
+        motion_step(&y_motion);
 
-            if (y_curr_period > y_period) { // Acceleration.
-                y_curr_period = BEGIN_PERIOD * (isqrtf(y_step_cnt + 1) - isqrtf(y_step_cnt));
-                TIM_SetCounter(TIM5, 1);
-                TIM_SetAutoreload(TIM5, y_curr_period);
-            }
-            y_step_cnt++;
-        } else {
-            y_step_cnt = 0;
-            y_steps = 0;
-        }
+//        if (y_motion.stright_steps--) {
+//            STM_EVAL_LEDToggle(LED3);
+//
+////            if (y_step_cnt & 1) {
+////                if (y_curr_period > y_period) { // Acceleration.
+////                    y_curr_period =
+////                        BEGIN_PERIOD * (isqrtf(y_step_cnt + 1) - isqrtf(
+////                            y_step_cnt));
+////                    TIM_SetCounter(TIM5, 1);
+////                    TIM_SetAutoreload(TIM5, y_curr_period);
+////                }
+////            }
+//            y_step_cnt++;
+//        } else {
+//            STM_EVAL_LEDOff(LED4);
+//            y_step_cnt = 0;
+//            y_motion.state = NO_MOTION;
+//        }
     }
 }
 

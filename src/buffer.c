@@ -18,9 +18,9 @@
 
 void buff_init(__IO fifo_t *buffer)
 {
-    buffer->cnt = 0;        // 0 bytes in the buffer
-    buffer->head = 0;       // Index points to start
-    buffer->tail = 0;       // Index points to start
+    buffer->cnt = 0;        // 0 bytes in the buffer.
+    buffer->head = 0;       // Index points to start.
+    buffer->tail = 0;       // Index points to start.
 }
 
 
