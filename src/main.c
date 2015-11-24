@@ -67,8 +67,8 @@ void print_enc_pos(void)
     
     if (enc_pos != enc_pos_prev) {
         sprintf((char*)buff, "%" PRIu32, enc_pos);
-        lcd_set_cursor(10, ROW_1); // Shifting for "Position: ".
-        lcd_puts((uint8_t*)"          "); // 9 spaces for erase.
+        lcd_set_cursor(10, ROW_1);          // Shifting for "Position: ".
+        lcd_puts((uint8_t*)"          ");   // 9 spaces for erase.
         lcd_set_cursor(10, ROW_1);
         lcd_puts(buff);
         
@@ -86,7 +86,6 @@ void calculate_velocity(void)
     
     enc_pos_prev = enc_pos;
     enc_ticks_prev = enc_ticks;
-    
 }
 
 void cmd_echo(void)
@@ -110,8 +109,8 @@ void cmd_processor(void)
 
     if (cmd_get_state(&cmd) == READY) {
         
-//        printf(">>> ");
-//        fflush(stdout);
+        printf(">>> ");
+        fflush(stdout);
         
         if (y_motion.state == NO_MOTION) {
 
@@ -134,11 +133,7 @@ void cmd_processor(void)
                     case 'F':
                     case 'f':
                         if (number > 0) {
-                            // Load desire period (max block speed).
                             motion_set_vel(&y_motion, number);
-                            // Maybe I need to disable the interrupt from timer here...
-                            TIM_SetCounter(TIM5, 0);
-                            TIM_SetAutoreload(TIM5, y_motion.period);
                             printf("Set feedrate: %.3lf mm/min.", number);
                         } else {
                             printf("Feedrate should be positive. "
@@ -147,7 +142,6 @@ void cmd_processor(void)
                         break;
                     case 'Y':
                     case 'y':
-                        STM_EVAL_LEDOn(LED4); // Signal.
                         motion_goto_pos(&y_motion, number);
                         printf("Set Y relative position: %.3lf mm", number);
                         break;
@@ -167,7 +161,7 @@ void cmd_processor(void)
     }
 }
 
-void motion_init(__IO motion_t *motion)
+void motion_conf(__IO motion_t *motion)
 {
     motion->dir = PLUS;
     motion->state = NO_MOTION;
@@ -190,21 +184,17 @@ void motion_goto_pos(__IO motion_t *motion, float32_t rel_position)
         motion->dir = MINUS;
         STM_EVAL_LEDOff(LED5);
     }
-    num_steps = MM_TO_STEPS(abs(rel_position));
+    num_steps = MM_TO_STEPS(fabs(rel_position));
 
     velocity = BASE_FREQ / motion->period;
-    accel_steps = (velocity * velocity) / (2 * ACCELERATION);
+    accel_steps = (velocity * velocity) / ((ACCELERATION * STEPS_IN_MM) << 1);
 
-    if (num_steps < (2 * accel_steps)) {
-        if (num_steps & 1) { // Odd number;
-            motion->stright_steps = 1;
-        } else {
-            motion->stright_steps = 0;
-        }
-        motion->accel_steps = motion->decel_steps = num_steps / 2;
+    if (num_steps < (accel_steps << 1)) {
+        motion->stright_steps = 0;
+        motion->accel_steps = motion->decel_steps = ROUND_FULL(num_steps >> 1);
     } else {
-        motion->stright_steps = num_steps - (2 * accel_steps);
-        motion->accel_steps = motion->decel_steps = accel_steps;
+        motion->stright_steps = ROUND_FULL(num_steps - (accel_steps << 1));
+        motion->accel_steps = motion->decel_steps = ROUND_FULL(accel_steps);
     }
 
     motion->state = MOTION;
@@ -285,16 +275,16 @@ void motion_step(__IO motion_t *motion)
 
 int main(void)
 {
-    motion_init(&y_motion);
+    motion_conf(&y_motion);
 
-    tim_conf();
+    tim_conf(); // Refactor this.
     usart_conf();
 //    lcd_conf();
 //    encoder_conf();
     interval_conf();
 
     STM_EVAL_LEDInit(LED3); // Step pin PD13 for Y axis.
-    STM_EVAL_LEDInit(LED4);
+//    STM_EVAL_LEDInit(LED4);
     STM_EVAL_LEDInit(LED5); // Dir pin PD14 for Y axis.
 //    STM_EVAL_LEDInit(LED6);
 
