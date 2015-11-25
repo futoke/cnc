@@ -165,6 +165,8 @@ void motion_conf(__IO motion_t *motion)
 {
     motion->dir = PLUS;
     motion->state = NO_MOTION;
+    motion->last_state = NO_MOTION;
+    motion->cnt = 0;
     motion->period = MM_MIN_TO_PERIOD(100);
     motion->accel_steps = 0;
     motion->stright_steps = 0;
@@ -207,28 +209,27 @@ void motion_set_vel(__IO motion_t *motion, float32_t velocity)
 
 void motion_step(__IO motion_t *motion)
 {
-    static edge_t edge = FALLING;
-    static uint32_t cnt = 0;
+    STM_EVAL_LEDOff(LED3);
 
     switch (motion->state) {
         case MOTION:
             motion->state = ACCEL;
             break;
         case ACCEL:
-            if (cnt < motion->accel_steps) {
-                if (edge == FALLING) {
-                    STM_EVAL_LEDOn(LED3);
+            if (motion->cnt < motion->accel_steps) {
                     TIM_SetCounter(TIM5, 1);
                     TIM_SetAutoreload(
-                    TIM5, BEGIN_PERIOD * (isqrtf(cnt + 1) - isqrtf(cnt)));
-                    cnt++;
-                    edge = RISING;
-                } else {
-                    STM_EVAL_LEDOff(LED3);      // FIXME: Custom port!!!
-                    edge = FALLING;
-                }
+                            TIM5,
+                            BEGIN_PERIOD * (
+                                    isqrtf(motion->cnt + 1) -
+                                    isqrtf(motion->cnt)
+                            )
+                    );
+                    motion->cnt++;
+                    motion->last_state = ACCEL;
+                    motion->state = WAIT;
             } else {
-                cnt = 0;
+                motion->cnt = 0;
                 TIM_SetCounter(TIM5, 1);
                 TIM_SetAutoreload(TIM5, motion->period);
                 motion->state = STRIGHT;
@@ -236,37 +237,34 @@ void motion_step(__IO motion_t *motion)
             break;
         case STRIGHT:
             if (motion->stright_steps) {
-                if (edge == FALLING) {
-                    STM_EVAL_LEDOn(LED3);
                     motion->stright_steps--;
-                    edge = RISING;
-                } else {
-                    STM_EVAL_LEDOff(LED3);      // FIXME: Custom port!!!
-                    edge = FALLING;
-                }
+                    motion->last_state = STRIGHT;
+                    motion->state = WAIT;
             } else {
                 motion->state = DECEL;
             }
             break;
         case DECEL:
             if (motion->decel_steps) {
-                if (edge == FALLING) {
-                    STM_EVAL_LEDOn(LED3);
                     TIM_SetCounter(TIM5, 1);
                     TIM_SetAutoreload(
-                        TIM5,
-                        BEGIN_PERIOD * (isqrtf(motion->decel_steps + 1) - isqrtf(
-                            motion->decel_steps)));
+                            TIM5,
+                            BEGIN_PERIOD * (
+                                    isqrtf(motion->decel_steps + 1) -
+                                    isqrtf(motion->decel_steps)
+                            )
+                    );
                     motion->decel_steps--;
-                    edge = RISING;
-                } else {
-                    STM_EVAL_LEDOff(LED3);      // FIXME: Custom port!!!
-                    edge = FALLING;
-                }
+                    motion->last_state = DECEL;
+                    motion->state = WAIT;
             } else {
-                STM_EVAL_LEDOff(LED3);
-                motion->state = NO_MOTION;
+                motion->last_state = NO_MOTION;
+                motion->state = WAIT;
             }
+            break;
+        case WAIT:
+            STM_EVAL_LEDOn(LED3);
+            motion->state = motion->last_state;
             break;
         default:
             break;

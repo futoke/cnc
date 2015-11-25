@@ -23,14 +23,13 @@ typedef enum {
     PLUS = 0, MINUS = !PLUS
 } dir_t;
 typedef enum {
-    NO_MOTION = 0, ACCEL, STRIGHT, DECEL, MOTION
+    NO_MOTION = 0, ACCEL, STRIGHT, DECEL, MOTION, WAIT
 } motion_state_t;
-typedef enum {
-    FALLING = 0, RISING = !FALLING
-} edge_t;
 typedef struct {
     dir_t dir;
     motion_state_t state;
+    motion_state_t last_state;
+    uint32_t cnt;
     uint32_t period;
     uint32_t accel_steps;
     uint32_t stright_steps;
