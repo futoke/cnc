@@ -32,16 +32,16 @@ typedef struct {
     uint32_t cnt;
     uint32_t period;
     uint32_t accel_steps;
-    uint32_t stright_steps;
+    uint64_t stright_steps;
     uint32_t decel_steps;
 } motion_t;
 /* Exported constants --------------------------------------------------------*/
 #define STEPS_PER_REV   400
-#define MICROSTEPS      4 // 0 - full; 1 - 2 microsteps; 2 - 4, 3 - 8, 4 - 16, etc.
+#define MICROSTEPS      0 // 0 - full; 1 - 2 microsteps; 2 - 4, 3 - 8, 4 - 16, etc.
 #define PITCH           5
-#define TICKS_PER_REV	2000.0
+#define TICKS_PER_REV	100.0
 #define BASE_FREQ       42000000ULL
-#define ACCELERATION    10 // mm/s^2
+#define ACCELERATION    100 // mm/s^2
 
 #define CMD_BUFFER      16
 /* Exported macro ------------------------------------------------------------*/
@@ -57,7 +57,7 @@ typedef struct {
 )
 #define BEGIN_PERIOD ( \
 		(uint32_t)( \
-				BASE_FREQ * isqrtf(2.0 / (ACCELERATION * STEPS_IN_MM)) \
+				(BASE_FREQ * isqrtf(2.0 / (ACCELERATION * STEPS_IN_MM)) + 0.5) \
 		) \
 )
 #define MM_TO_STEPS(x) ( \

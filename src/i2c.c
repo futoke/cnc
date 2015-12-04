@@ -39,7 +39,9 @@ void i2c_conf(void)
     GPIOB_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
     GPIO_Init(GPIOB, &GPIOB_InitStructure);
     
+    // SCL
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_I2C1);
+    // SDA
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_I2C1);
     
     I2C_Cmd(I2C1, ENABLE);
