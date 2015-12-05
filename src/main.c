@@ -7,85 +7,101 @@ float32_t isqrtf(float32_t num)
     return (result);
 }
 
-void print_enc_revs(void)
+void task_print_enc_revs(__attribute__((unused)) void *pvParameters)
 {
-    uint8_t buff[10];
-    static uint8_t init = 1;
-    static uint32_t enc_revs_num_prev;
-    
-    if (init) {
-        lcd_clear_row(ROW_2);
-        lcd_puts_row((uint8_t *)"Revolutions: 0", ROW_2);
-        init = 0;
-    }
-    
-    if (enc_revs_num != enc_revs_num_prev) {
-        sprintf((char*)buff, "%" PRIu32, enc_revs_num);
-        lcd_set_cursor(13, ROW_2); // Shifting for "Revolutions: "
-        lcd_puts(buff);
-        enc_revs_num_prev = enc_revs_num;
+    for (;;) {
+        uint8_t buff[10];
+        static uint8_t init = 1;
+        static uint32_t enc_revs_num_prev;
+
+        if (init) {
+            lcd_clear_row(ROW_2);
+            lcd_puts_row((uint8_t *)"Revolutions: 0", ROW_2);
+            init = 0;
+        }
+
+        if (enc_revs_num != enc_revs_num_prev) {
+            sprintf((char*)buff, "%" PRIu32, enc_revs_num);
+            lcd_set_cursor(13, ROW_2); // Shifting for "Revolutions: "
+            lcd_puts(buff);
+            enc_revs_num_prev = enc_revs_num;
+        }
+
+        vTaskDelay(500);
     }
 }
 
-void print_enc_velocity(void)
+void task_print_enc_velocity(__attribute__((unused)) void *pvParameters)
 {
-    uint8_t buff[10];
-    float velocity_rev_per_min;
-    static uint8_t init = 1;
-    static uint32_t enc_velocity_prev;
-    
-    if (init) {
-        lcd_clear_row(ROW_3);
-        lcd_puts_row((uint8_t *)"Velocity: 0", ROW_3);
-        init = 0;
-    }
-    
-    if (enc_velocity != enc_velocity_prev) {
-        // Measuring velocity 10 times per second (100 ms interval).
-        velocity_rev_per_min = ((float)enc_velocity / TICKS_PER_REV) * 600.0;
-        sprintf((char*)buff, "%5.1f", velocity_rev_per_min);
-        lcd_set_cursor(10, ROW_3); // Shifting for "Velocity: " (10 chars).
-        lcd_puts((uint8_t*)"          "); // 10 spaces for erase.
-        lcd_set_cursor(10, ROW_3);
-        lcd_puts(buff);
+    for (;;) {
+        uint8_t buff[10];
+        float velocity_rev_per_min;
+        static uint8_t init = 1;
+        static uint32_t enc_velocity_prev;
+
+        if (init) {
+            lcd_clear_row(ROW_3);
+            lcd_puts_row((uint8_t *)"Velocity: 0", ROW_3);
+            init = 0;
+        }
         
-        enc_velocity_prev = enc_velocity;
+        if (enc_velocity != enc_velocity_prev) {
+            // Measuring velocity 10 times per second (100 ms interval).
+            velocity_rev_per_min =
+                ((float)enc_velocity / TICKS_PER_REV) * 600.0;
+            sprintf((char*)buff, "%5.1f", velocity_rev_per_min);
+            lcd_set_cursor(10, ROW_3); // Shifting for "Velocity: " (10 chars).
+            lcd_puts((uint8_t*)"          "); // 10 spaces for erase.
+            lcd_set_cursor(10, ROW_3);
+            lcd_puts(buff);
+
+            enc_velocity_prev = enc_velocity;
+        }
+        vTaskDelay(500);
     }
 }
 
-void print_enc_pos(void)
+void task_print_enc_pos(__attribute__((unused)) void *pvParameters)
 {
-    uint8_t buff[10];
-    static uint8_t init = 1;
-    static uint32_t enc_pos_prev;
-    
-    if (init) {
-        lcd_clear_row(ROW_1);
-        lcd_puts_row((uint8_t *)"Position: 0", ROW_1);
-        init = 0;
-    }
-    
-    if (enc_pos != enc_pos_prev) {
-        sprintf((char*)buff, "%" PRIu32, enc_pos);
+    for (;;) {
+        uint8_t buff[10];
+        static uint8_t init = 1;
+        static uint32_t enc_pos_prev;
+
+        if (init) {
+            lcd_clear_row(ROW_1);
+            lcd_puts_row((uint8_t *)"Position: 1", ROW_1);
+            init = 0;
+        }
+        
+//        if (enc_pos != enc_pos_prev) {
+//            sprintf((char*)buff, "%" PRIu32, (TIM3->CNT >> 1));
+        sprintf((char*)buff, "%" PRIu32, enc_pos_prev++);
         lcd_set_cursor(10, ROW_1);          // Shifting for "Position: ".
         lcd_puts((uint8_t*)"          ");   // 9 spaces for erase.
         lcd_set_cursor(10, ROW_1);
         lcd_puts(buff);
-        
-        enc_pos_prev = enc_pos;
+
+//            enc_pos_prev = enc_pos;
+//        }
+        vTaskDelay(500);
     }
 }
 
-void calculate_velocity(void)
+void task_calculate_velocity(__attribute__((unused)) void *pvParameters)
 {
-    static uint32_t enc_ticks_prev, enc_pos_prev;
-    enc_pos = (TIM3->CNT >> 1);
-    
-    enc_ticks += abs(enc_pos - enc_pos_prev);
-    enc_velocity = enc_ticks - enc_ticks_prev;
-    
-    enc_pos_prev = enc_pos;
-    enc_ticks_prev = enc_ticks;
+    for (;;) {
+        static uint32_t enc_ticks_prev, enc_pos_prev;
+        enc_pos = (TIM3->CNT >> 1);
+
+        enc_ticks += abs(enc_pos - enc_pos_prev);
+        enc_velocity = enc_ticks - enc_ticks_prev;
+
+        enc_pos_prev = enc_pos;
+        enc_ticks_prev = enc_ticks;
+
+        vTaskDelay(100);
+    }
 }
 
 void cmd_echo(void)
@@ -217,19 +233,14 @@ void motion_step(__IO motion_t *motion)
             break;
         case ACCEL:
             if (motion->cnt < motion->accel_steps) {
-                    TIM_SetCounter(TIM5, 1);
-                    TIM_SetAutoreload(
-                            TIM5,
-                            (uint32_t) (
-                                    (BEGIN_PERIOD * (
-                                            isqrtf(motion->cnt + 1) -
-                                            isqrtf(motion->cnt)
-                                    )) + 0.5
-                            )
-                    );
-                    motion->cnt++;
-                    motion->last_state = ACCEL;
-                    motion->state = WAIT;
+                TIM_SetCounter(TIM5, 1);
+                TIM_SetAutoreload(
+                    TIM5,
+                    (uint32_t)((BEGIN_PERIOD * (isqrtf(motion->cnt + 1) - isqrtf(
+                        motion->cnt))) + 0.5));
+                motion->cnt++;
+                motion->last_state = ACCEL;
+                motion->state = WAIT;
             } else {
                 motion->cnt = 0;
                 TIM_SetCounter(TIM5, 1);
@@ -239,28 +250,23 @@ void motion_step(__IO motion_t *motion)
             break;
         case STRIGHT:
             if (motion->stright_steps) {
-                    motion->stright_steps--;
-                    motion->last_state = STRIGHT;
-                    motion->state = WAIT;
+                motion->stright_steps--;
+                motion->last_state = STRIGHT;
+                motion->state = WAIT;
             } else {
                 motion->state = DECEL;
             }
             break;
         case DECEL:
             if (motion->decel_steps) {
-                    TIM_SetCounter(TIM5, 1);
-                    TIM_SetAutoreload(
-                            TIM5,
-                            (uint32_t) (
-                                    (BEGIN_PERIOD * (
-                                            isqrtf(motion->decel_steps + 1) -
-                                            isqrtf(motion->decel_steps)
-                                    )) + 0.5
-                            )
-                    );
-                    motion->decel_steps--;
-                    motion->last_state = DECEL;
-                    motion->state = WAIT;
+                TIM_SetCounter(TIM5, 1);
+                TIM_SetAutoreload(
+                    TIM5,
+                    (uint32_t)((BEGIN_PERIOD * (isqrtf(motion->decel_steps + 1) - isqrtf(
+                        motion->decel_steps))) + 0.5));
+                motion->decel_steps--;
+                motion->last_state = DECEL;
+                motion->state = WAIT;
             } else {
                 motion->last_state = NO_MOTION;
                 motion->state = WAIT;
@@ -276,29 +282,131 @@ void motion_step(__IO motion_t *motion)
     }
 }
 
+void vTaskLED1(__attribute__((unused)) void *pvParameters)
+{
+    for (;;) {
+        STM_EVAL_LEDOn(LED3);
+        vTaskDelay(500);
+        STM_EVAL_LEDOff(LED3);
+        vTaskDelay(500);
+    }
+}
+
+void vTaskLED2(__attribute__((unused)) void *pvParameters)
+{
+    for (;;) {
+        STM_EVAL_LEDOn(LED4);
+        vTaskDelay(321);
+        STM_EVAL_LEDOff(LED4);
+        vTaskDelay(321);
+    }
+}
+
+void vTaskLED3(__attribute__((unused)) void *pvParameters)
+{
+    for (;;) {
+        STM_EVAL_LEDOn(LED5);
+        vTaskDelay(200);
+        STM_EVAL_LEDOff(LED5);
+        vTaskDelay(200);
+    }
+}
+
+void vTaskLED4(__attribute__((unused)) void *pvParameters)
+{
+    for (;;) {
+        STM_EVAL_LEDOn(LED6);
+        vTaskDelay(121);
+        STM_EVAL_LEDOff(LED6);
+        vTaskDelay(121);
+    }
+}
+
 int main(void)
 {
-    motion_conf(&y_motion);
+//    motion_conf(&y_motion);
 
-    tim_conf(); // Refactor this.
-    usart_conf();
+//    tim_conf(); // Refactor this.
+//    usart_conf();
     lcd_conf();
     encoder_conf();
-    interval_conf();
+//    interval_conf();
 
     STM_EVAL_LEDInit(LED3); // Step pin PD13 for Y axis.
-//    STM_EVAL_LEDInit(LED4);
+    STM_EVAL_LEDInit(LED4);
     STM_EVAL_LEDInit(LED5); // Dir pin PD14 for Y axis.
-//    STM_EVAL_LEDInit(LED6);
+    STM_EVAL_LEDInit(LED6);
 
-    set_interval_task(cmd_processor, 1);
+//    set_interval_task(cmd_processor, 1);
     
-    set_interval_task(print_enc_revs, 500);
-    set_interval_task(print_enc_pos, 500);
-    set_interval_task(print_enc_velocity, 100);
+//    set_interval_task(print_enc_revs, 500);
+//    set_interval_task(print_enc_pos, 500);
+//    set_interval_task(print_enc_velocity, 100);
 //
-    set_interval_task(calculate_velocity, 100);
-    set_interval_task(cmd_echo, 1);
+//    set_interval_task(calculate_velocity, 100);
+//    set_interval_task(cmd_echo, 1);
+
+    xTaskCreate(
+        vTaskLED1,
+        "LED1",
+        configMINIMAL_STACK_SIZE,
+        NULL,
+        2,
+        (xTaskHandle*) NULL);
+    xTaskCreate(
+        vTaskLED2,
+        "LED2",
+        configMINIMAL_STACK_SIZE,
+        NULL,
+        2,
+        (xTaskHandle*) NULL);
+    xTaskCreate(
+        vTaskLED3,
+        "LED3",
+        configMINIMAL_STACK_SIZE,
+        NULL,
+        2,
+        (xTaskHandle*) NULL);
+    xTaskCreate(
+        vTaskLED4,
+        "LED4",
+        configMINIMAL_STACK_SIZE,
+        NULL,
+        2,
+        (xTaskHandle*) NULL);
+//    xTaskCreate(
+//        task_print_enc_revs,
+//        "PRINT_ENC_REVS",
+//        configMINIMAL_STACK_SIZE,
+//        NULL,
+//        2,
+//        (xTaskHandle*) NULL
+//    );
+    xTaskCreate(
+        task_print_enc_pos,
+        "PRINT_ENC_POS",
+        configMINIMAL_STACK_SIZE,
+        NULL,
+        2,
+        (xTaskHandle*) NULL);
+//    xTaskCreate(
+//        task_print_enc_velocity,
+//        "PRINT_ENC_VELOCITY",
+//        configMINIMAL_STACK_SIZE,
+//        NULL,
+//        2,
+//        (xTaskHandle*) NULL
+//    );
+//    xTaskCreate(
+//        task_calculate_velocity,
+//        "CALCULATE_VELOCITY",
+//        configMINIMAL_STACK_SIZE,
+//        NULL,
+//        2,
+//        (xTaskHandle*) NULL
+//    );
+
+    vTaskStartScheduler();
 
     while (1)
         ;

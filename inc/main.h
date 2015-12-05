@@ -11,6 +11,9 @@
 #include "stm32f4xx.h"
 #include "stm32f4_discovery.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include "usart.h"
 #include "buffer.h"
 #include "encoder.h"

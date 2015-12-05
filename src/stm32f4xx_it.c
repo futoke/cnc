@@ -92,29 +92,17 @@ void DebugMon_Handler(void)
  * @param  None
  * @retval None
  */
-void SVC_Handler(void)
-{
-}
+//void SVC_Handler(void)
+//{
+//}
 
 /**
  * @brief  This function handles PendSV_Handler exception.
  * @param  None
  * @retval None
  */
-void PendSV_Handler(void)
-{
-}
-
-//uint8_t delay_cycles(uint32_t cycles)
+//void PendSV_Handler(void)
 //{
-//    static uint32_t cnt = 0;
-//
-//    if (cnt++ == cycles) {
-//        cnt = 0;
-//        return 1;
-//    } else {
-//        return 0;
-//    }
 //}
 
 /**
@@ -122,36 +110,10 @@ void PendSV_Handler(void)
  * @param  None
  * @retval None
  */
-void SysTick_Handler(void)
-{
-//	static uint8_t acc = 0;
-//
-//    if (acc) {
-//		if (tim5_period > 2000) {
-//			if (delay_cycles(8)) {
-//				TIM_SetCounter(TIM5, 1);
-//				TIM_SetAutoreload(TIM5, tim5_period);
-//				tim5_period -= 50;
-//			}
-//		} else {
-//			if (delay_cycles(5000)){
-//				acc = 0;
-//			}
-//		}
-//	} else {
-//		if (tim5_period < 30000) {
-//			if (delay_cycles(8)) {
-//				TIM_SetCounter(TIM5, 1);
-//				TIM_SetAutoreload(TIM5, tim5_period);
-//				tim5_period += 50;
-//			}
-//		} else {
-//			acc = 1;
-//		}
-//	}
-    /******************************************************************************/
-    interval_service();
-}
+//void SysTick_Handler(void)
+//{
+//        interval_service(); // My old dispatcher.
+//}
 
 /**
  * @brief  This function handles TIM3 global interrupt request.
@@ -169,57 +131,10 @@ void TIM3_IRQHandler(void)
  */
 void TIM5_IRQHandler(void)
 {
-//    static uint32_t cnt = 0;
-//
-//    uint32_t begin_period = 1052784;
-//    uint32_t end_period = 2000;
-//
-//    if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
-//        STM_EVAL_LEDToggle(LED3);
-//
-//        if (begin_period > end_period) {
-//            current_period = begin_period * (isqrtf(cnt + 1) - isqrtf(cnt));
-//            if (current_period > end_period) {
-//                cnt++;
-//            }
-//        } else if (begin_period < end_period) {
-//            current_period = begin_period * (isqrtf(cnt + 1) + isqrtf(cnt));
-//            if (current_period < end_period) {
-//                cnt++;
-//            }
-//        } else {
-//            current_period = begin_period;
-//        }
-//
-//        TIM_SetCounter(TIM5, 1);
-//        TIM_SetAutoreload(TIM5, current_period);
-//
-//    static uint32_t y_step_cnt = 0;
-
-
     if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
+
         TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
-
         motion_step(&y_motion);
-
-//        if (y_motion.stright_steps--) {
-//            STM_EVAL_LEDToggle(LED3);
-//
-////            if (y_step_cnt & 1) {
-////                if (y_curr_period > y_period) { // Acceleration.
-////                    y_curr_period =
-////                        BEGIN_PERIOD * (isqrtf(y_step_cnt + 1) - isqrtf(
-////                            y_step_cnt));
-////                    TIM_SetCounter(TIM5, 1);
-////                    TIM_SetAutoreload(TIM5, y_curr_period);
-////                }
-////            }
-//            y_step_cnt++;
-//        } else {
-//            STM_EVAL_LEDOff(LED4);
-//            y_step_cnt = 0;
-//            y_motion.state = NO_MOTION;
-//        }
     }
 }
 
