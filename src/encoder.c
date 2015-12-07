@@ -28,19 +28,19 @@ void GPIO_Configuration(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
     
-    // PC.06 TIM3_CH1, PC.07 TIM3_CH2
+    // PC.06 TIM4_CH1, PC.07 TIM4_CH2
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
     
-    GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_TIM3);
-    GPIO_PinAFConfig(GPIOC, GPIO_PinSource7, GPIO_AF_TIM3);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_TIM4);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource7, GPIO_AF_TIM4);
 }
 
 /******************************************************************************/
 
-void TIM3_Configuration(void)
+void TIM4_Configuration(void)
 {
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
     
@@ -49,14 +49,16 @@ void TIM3_Configuration(void)
     TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
     
-    TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+    TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure);
     
     // TIM_EncoderMode_TI1: Counter counts on TI1FP1 edge depending on TI2FP2 level.
     TIM_EncoderInterfaceConfig(
-    TIM3, TIM_EncoderMode_TI1,
-    TIM_ICPolarity_Rising,
-    TIM_ICPolarity_Rising);
-    TIM_Cmd(TIM3, ENABLE);
+        TIM4,
+        TIM_EncoderMode_TI1,
+        TIM_ICPolarity_Rising,
+        TIM_ICPolarity_Rising
+    );
+    TIM_Cmd(TIM4, ENABLE);
 }
 
 // For revolution counter
@@ -116,7 +118,7 @@ void encoder_conf(void)
     
     RCC_Configuration();
     GPIO_Configuration();
-    TIM3_Configuration();
+    TIM4_Configuration();
     
     Configure_PD0(); // For encoder Z pin.
 }

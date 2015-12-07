@@ -74,16 +74,19 @@ void task_print_enc_pos(__attribute__((unused)) void *pvParameters)
             init = 0;
         }
         
-//        if (enc_pos != enc_pos_prev) {
-//            sprintf((char*)buff, "%" PRIu32, (TIM3->CNT >> 1));
-        sprintf((char*)buff, "%" PRIu32, enc_pos_prev++);
-        lcd_set_cursor(10, ROW_1);          // Shifting for "Position: ".
-        lcd_puts((uint8_t*)"          ");   // 9 spaces for erase.
-        lcd_set_cursor(10, ROW_1);
-        lcd_puts(buff);
+//        enc_pos_prev  = (TIM3->CNT >> 1);
 
-//            enc_pos_prev = enc_pos;
-//        }
+        if (enc_pos != enc_pos_prev) {
+
+//            sprintf((char*)buff, "%" PRIu32, (TIM3->CNT >> 1));
+            sprintf((char*)buff, "%" PRIu32, TIM_GetCounter(TIM4));
+            lcd_set_cursor(10, ROW_1);          // Shifting for "Position: ".
+            lcd_puts((uint8_t*)"          ");   // 9 spaces for erase.
+            lcd_set_cursor(10, ROW_1);
+            lcd_puts(buff);
+
+            enc_pos_prev = enc_pos;
+        }
         vTaskDelay(500);
     }
 }
@@ -205,13 +208,13 @@ void motion_goto_pos(__IO motion_t *motion, float32_t rel_position)
     num_steps = MM_TO_STEPS(fabs(rel_position));
 
     velocity = BASE_FREQ / motion->period;
-    accel_steps = (velocity * velocity) / ((ACCELERATION * STEPS_IN_MM) << 1);
+    accel_steps = (velocity * velocity) / ((ACCELERATION * STEPS_IN_MM) << 1UL);
 
     if (num_steps < (accel_steps << 1)) {
         motion->stright_steps = 0;
-        motion->accel_steps = motion->decel_steps = ROUND_FULL(num_steps >> 1);
+        motion->accel_steps = motion->decel_steps = ROUND_FULL(num_steps >> 1UL);
     } else {
-        motion->stright_steps = ROUND_FULL(num_steps - (accel_steps << 1));
+        motion->stright_steps = ROUND_FULL(num_steps - (accel_steps << 1UL));
         motion->accel_steps = motion->decel_steps = ROUND_FULL(accel_steps);
     }
 
@@ -336,6 +339,8 @@ int main(void)
     STM_EVAL_LEDInit(LED4);
     STM_EVAL_LEDInit(LED5); // Dir pin PD14 for Y axis.
     STM_EVAL_LEDInit(LED6);
+
+    STM_EVAL_PBInit(BUTTON_USER, BUTTON_MODE_EXTI);
 
 //    set_interval_task(cmd_processor, 1);
     
