@@ -158,9 +158,9 @@ void SysTick_Handler(void)
  * @param  None
  * @retval None
  */
-void TIM3_IRQHandler(void)
-{
-}
+//void TIM3_IRQHandler(void)
+//{
+//}
 
 /**
  * @brief  This function handles TIM5 global interrupt request.
@@ -196,11 +196,10 @@ void TIM5_IRQHandler(void)
 //
 //    static uint32_t y_step_cnt = 0;
 
-
+	STM_EVAL_LEDToggle(LED3);
     if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
-        TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
-
         motion_step(&y_motion);
+        TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
 
 //        if (y_motion.stright_steps--) {
 //            STM_EVAL_LEDToggle(LED3);

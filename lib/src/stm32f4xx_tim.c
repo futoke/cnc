@@ -271,8 +271,8 @@ void TIM_DeInit(TIM_TypeDef* TIMx)
  */
 void TIM_TimeBaseInit(
     TIM_TypeDef* TIMx,
-    TIM_TimeBaseInitTypeDef* TIM_TimeBaseInitStruct)
-{
+    TIM_TimeBaseInitTypeDef* TIM_TimeBaseInitStruct
+) {
     uint16_t tmpcr1 = 0;
     
     /* Check the parameters */
