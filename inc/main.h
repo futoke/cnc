@@ -23,25 +23,31 @@ typedef enum {
     PLUS = 0, MINUS = !PLUS
 } dir_t;
 typedef enum {
-    NO_MOTION = 0, ACCEL, STRIGHT, DECEL, MOTION, WAIT
-} motion_state_t;
+    NO_MOTION = 0, ACCEL, STRIGHT, DECEL, MOTION
+} motor_state_t;
 typedef struct {
     dir_t dir;
-    motion_state_t state;
-    motion_state_t last_state;
+    motor_state_t state;
     uint32_t cnt;
     uint32_t period;
     uint32_t accel_steps;
     uint32_t stright_steps;
     uint32_t decel_steps;
-} motion_t;
+    TIM_TypeDef* timer;
+} motor_t;
+typedef struct {
+	float32_t abs_x;
+	float32_t abs_y;
+	float32_t feedrate;
+} machine_param_t;
 /* Exported constants --------------------------------------------------------*/
-#define STEPS_PER_REV   400
-#define MICROSTEPS      2 // 0 - full; 1 - 2 microsteps; 2 - 4, 3 - 8, 4 - 16, etc.
-#define PITCH           5
+#define STEPS_PER_REV   200
+#define MICROSTEPS      4 // 0 - full; 1 - 2 microsteps; 2 - 4, 3 - 8, 4 - 16, etc.
+#define PITCH           5 // mm
 #define TICKS_PER_REV	100.0
 #define BASE_FREQ       42000000ULL
 #define ACCELERATION    200 // mm/s^2
+#define MAX_VELOCITY	6000 // mm/min.
 
 #define CMD_BUFFER      16
 /* Exported macro ------------------------------------------------------------*/
@@ -73,14 +79,15 @@ typedef struct {
 /* Exported functions ------------------------------------------------------- */
 float32_t isqrtf(float32_t num);
 
-void motion_conf(__IO motion_t *motion);
-void motion_goto_pos(__IO motion_t *motion, float32_t rel_position);
-void motion_set_vel(__IO motion_t *motion, float32_t velocity);
-void motion_step(__IO motion_t *motion);
+void motor_conf(__IO motor_t* motor, TIM_TypeDef* timer);
+void motor_new_period(__IO motor_t* motor, uint32_t period);
+void motor_goto_pos(__IO motor_t* motor, float32_t rel_position);
+void motor_set_vel(__IO motor_t* motor, float32_t velocity);
+void motor_do_step(__IO motor_t* motor);
 
-static void tim_conf(void);
-static void gpio_conf(void);
+void tim_5_12_conf(void);
+void tim_2_9_conf(void);
 /* Exported variables ------------------------------------------------------- */
-__IO motion_t y_motion;
+__IO motor_t y_motor;
 
 #endif /* CNC_MAIN_H */

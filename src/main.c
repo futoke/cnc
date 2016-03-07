@@ -106,7 +106,7 @@ void cmd_processor(void)
 //        printf(">>> ");
 //        fflush(stdout);
 
-		if (y_motion.state == NO_MOTION) {
+		if (y_motor.state == NO_MOTION) {
 
 			while (cmd.text[char_cnt]) {
 				if (char_cnt == 0) {
@@ -127,7 +127,7 @@ void cmd_processor(void)
 				case 'F':
 				case 'f':
 					if (number > 0) {
-						motion_set_vel(&y_motion, number);
+						motor_set_vel(&y_motor, number);
 						printf("Set feedrate: %.3lf mm/min.", number);
 					} else {
 						printf("Feedrate should be positive. "
@@ -136,7 +136,7 @@ void cmd_processor(void)
 					break;
 				case 'Y':
 				case 'y':
-					motion_goto_pos(&y_motion, number);
+					motor_goto_pos(&y_motor, number);
 					printf("Set Y relative position: %.3lf mm", number);
 					break;
 				default:
@@ -155,115 +155,117 @@ void cmd_processor(void)
 	}
 }
 
-void motion_conf(__IO motion_t *motion)
+void motor_conf(__IO motor_t* motor, TIM_TypeDef* timer)
 {
-	motion->dir = PLUS;
-	motion->state = NO_MOTION;
-	motion->last_state = NO_MOTION;
-	motion->cnt = 0;
-	motion->period = MM_MIN_TO_PERIOD(1200);
-	motion->accel_steps = 0;
-	motion->stright_steps = 0;
-	motion->decel_steps = 0;
+//	motor = (__IO motor_t*)malloc(sizeof(motor_t));
+
+	motor->dir = PLUS;
+	motor->state = NO_MOTION;
+	motor->cnt = 0;
+	motor->period = MM_MIN_TO_PERIOD(MAX_VELOCITY);
+	motor->accel_steps = 0;
+	motor->stright_steps = 0;
+	motor->decel_steps = 0;
+	motor->timer = timer;
 }
 
-void motion_goto_pos(__IO motion_t *motion, float32_t rel_position)
+void motor_goto_pos(__IO motor_t* motor, float32_t rel_position)
 {
 	uint64_t num_steps;
 	uint32_t accel_steps;
 	uint32_t velocity;         // Steps per sec.
 
 	if (rel_position > 0) {
-		motion->dir = PLUS;
-		STM_EVAL_LEDOn(LED5);
+		motor->dir = PLUS;
+		STM_EVAL_LEDOn(LED5); // Refactor this shit!!!
 	} else {
-		motion->dir = MINUS;
-		STM_EVAL_LEDOff(LED5);
+		motor->dir = MINUS;
+		STM_EVAL_LEDOff(LED5);  // Refactor this shit!!!
 	}
 	num_steps = MM_TO_STEPS(fabs(rel_position));
 
-	velocity = BASE_FREQ / motion->period;
+	velocity = BASE_FREQ / motor->period;
 	accel_steps = (velocity * velocity) / ((ACCELERATION * STEPS_IN_MM) << 1);
 
 	if (num_steps < (accel_steps << 1)) {
-		motion->stright_steps = 0;
-		motion->accel_steps = motion->decel_steps = num_steps >> 1;
+		motor->stright_steps = 0;
+		motor->accel_steps = motor->decel_steps = num_steps >> 1;
 	} else {
-		motion->stright_steps = num_steps - (accel_steps << 1);
-		motion->accel_steps = motion->decel_steps = accel_steps;
+		motor->stright_steps = num_steps - (accel_steps << 1);
+		motor->accel_steps = motor->decel_steps = accel_steps;
 	}
 
-	if (motion->accel_steps > 0) {
-		motion->state = ACCEL;
+	if (motor->accel_steps > 0) {
+		motor->state = ACCEL;
 	} else {
-		TIM_SetCounter(TIM5, 1);
-		TIM_SetAutoreload(TIM5, motion->period);
-		motion->state = STRIGHT;
+		TIM_SetCounter(motor->timer, 1);
+		TIM_SetAutoreload(motor->timer, motor->period);
+		motor->state = STRIGHT;
 	}
-	TIM_Cmd(TIM5, ENABLE);
+	TIM_Cmd(motor->timer, ENABLE);
 }
 
-void motion_set_vel(__IO motion_t *motion, float32_t velocity)
+void motor_set_vel(__IO motor_t* motor, float32_t velocity)
 {
-	motion->period = MM_MIN_TO_PERIOD(velocity);
+	motor->period = MM_MIN_TO_PERIOD(velocity);
 }
 
-void motion_new_period(TIM_TypeDef* TIMx, uint32_t period)
+void motor_new_period(__IO motor_t* motor, uint32_t period)
 {
-	TIM_SetCounter(TIMx, 1);
+	TIM_SetCounter(motor->timer, 1);
 	TIM_SetAutoreload(
-			TIMx,
+			motor->timer,
 			(uint32_t) (
 					BEGIN_PERIOD * (isqrtf(period + 1) - isqrtf(period)) + 0.5
 			)
 	);
 }
 
-void motion_step(__IO motion_t *motion)
+void motor_do_step(__IO motor_t* motor)
 {
 	static uint32_t cnt = 0;
 
-	switch (motion->state) {
+	switch (motor->state) {
 	case ACCEL:
-		if (cnt++ < motion->accel_steps) {
-			motion_new_period(TIM5, cnt);
+		if (cnt++ < motor->accel_steps) {
+			motor_new_period(motor, cnt);
 		}
-		// Do not refactor this to 'else'!!!
-		if (cnt == motion->accel_steps) {
+		// Do not refactor it, 'else' does not work!!!
+		if (cnt == motor->accel_steps) {
 			cnt = 0;
 			// Set velocity for stright.
-			TIM_SetCounter(TIM5, 1);
-			TIM_SetAutoreload(TIM5, motion->period);
-			if (motion->stright_steps > 0) {
-				motion->state = STRIGHT;
+			TIM_SetCounter(motor->timer, 1);
+			TIM_SetAutoreload(motor->timer, motor->period);
+			if (motor->stright_steps > 0) {
+				motor->state = STRIGHT;
 			} else {
-				cnt = motion->decel_steps;
-				motion->state = DECEL;
+				cnt = motor->decel_steps;
+				motor->state = DECEL;
 			}
 		}
 		break;
 	case STRIGHT:
-		if (!(cnt++ < motion->stright_steps)) {
-			cnt = motion->decel_steps;
+		if (!(cnt++ < motor->stright_steps)) {
+			cnt = motor->decel_steps;
 
-			if (motion->decel_steps > 0) {
-				motion->state = DECEL;
+			if (motor->decel_steps > 0) {
+				motor->state = DECEL;
 			} else {
 				cnt = 0;
-				motion->state = NO_MOTION;
-				TIM_Cmd(TIM5, DISABLE);
+				motor->state = NO_MOTION;
+				TIM_Cmd(motor->timer, DISABLE);
 				usart_puts((uint8_t*)"\nMotion is complete!\n>>> ");
 			}
 		}
 		break;
 	case DECEL:
 		if (cnt--) {
-			motion_new_period(TIM5, cnt);
+			motor_new_period(motor, cnt);
 		}
-		// Do not refactor this to 'else'!!!
+		// Do not refactor it, 'else' does not work!!!
 		if (cnt == 0) {
-			motion->state = NO_MOTION;
-			TIM_Cmd(TIM5, DISABLE);
+			motor->state = NO_MOTION;
+			TIM_Cmd(motor->timer, DISABLE);
 			usart_puts((uint8_t*)"\nMotion is complete!\n>>> ");
 		}
 		break;
@@ -273,9 +275,11 @@ void motion_step(__IO motion_t *motion)
 }
 
 int main(void) {
-	motion_conf(&y_motion);
-	tim_conf();
-	gpio_conf();
+
+	tim_5_12_conf();
+	tim_2_9_conf();
+	motor_conf(&y_motor, TIM5);
+
 	usart_conf();
 //    lcd_conf();
 //    encoder_conf();
@@ -299,12 +303,17 @@ int main(void) {
 		;
 }
 
-static void tim_conf(void) {
+/**
+ * Configure the TIM5 and TIM12 to work together. TIM5 is a master for
+ * main priod generartion, TIM12 is a timer for generating one 5us pulse.
+ * Configure TIM12 out for alternate function (AF) GPIO port PB14.
+ */
+void tim_5_12_conf(void)
+{
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 	TIM_OCInitTypeDef TIM_OCInitStructure;
-
-////////////////////////////////////////////////////////////////////////////////
+	GPIO_InitTypeDef GPIO_InitStructure;
 
 	/* Enable the TIM5 gloabal Interrupt */
 	NVIC_InitStructure.NVIC_IRQChannel = TIM5_IRQn;
@@ -317,7 +326,6 @@ static void tim_conf(void) {
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
 
 	/* TIM5 base configuration */
-//	TIM_TimeBaseStructure.TIM_Period = MM_MIN_TO_PERIOD(100);
 	TIM_TimeBaseStructure.TIM_Period = BEGIN_PERIOD;
 	TIM_TimeBaseStructure.TIM_Prescaler = 1; // 42MHz
 	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
@@ -327,53 +335,118 @@ static void tim_conf(void) {
 	/* TIM IT enable */
 	TIM_ITConfig(TIM5, TIM_IT_Update, ENABLE);
 
-////////////////////////////////////////////////////////////////////////////////
+	/* TIM12 clock enable */
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM12, ENABLE);
 
-	/* TIM3 clock enable */
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
-
-	/* TIM3 base configuration */
+	/* TIM12 base configuration */
 	TIM_TimeBaseStructure.TIM_Period = 210; // ~5us delay.
 	TIM_TimeBaseStructure.TIM_Prescaler = 1;
 	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
 
-	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+	TIM_TimeBaseInit(TIM12, &TIM_TimeBaseStructure);
 
-	/* TIM3 PWM1 Mode configuration: Channel1 */
+	/* TIM12 PWM1 Mode configuration: Channel1 */
 	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
 	TIM_OCInitStructure.TIM_Pulse = 1;
 	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
 
-	TIM_OC1Init(TIM3, &TIM_OCInitStructure);
-
-////////////////////////////////////////////////////////////////////////////////
+	TIM_OC1Init(TIM12, &TIM_OCInitStructure);
 
 	/* One Pulse Mode selection */
-	TIM_SelectOnePulseMode(TIM3, TIM_OPMode_Single);
+	TIM_SelectOnePulseMode(TIM12, TIM_OPMode_Single);
 	/* Input Trigger selection */
-	TIM_SelectInputTrigger(TIM3, TIM_TS_ITR2);
+	TIM_SelectInputTrigger(TIM12, TIM_TS_ITR1); //See DM00031020, p. 664.
 	/* Slave Mode selection: Trigger Mode */
-	TIM_SelectSlaveMode(TIM3, TIM_SlaveMode_Trigger);
+	TIM_SelectSlaveMode(TIM12, TIM_SlaveMode_Trigger);
 	TIM_SelectOutputTrigger(TIM5, TIM_TRGOSource_Update);
-}
-
-static void gpio_conf(void) {
-	GPIO_InitTypeDef GPIO_InitStructure;
 
 	/* GPIOC clock enable */
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
 
-	/* TIM3_CH1 pin (PC6) configuration */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+	/* TIM12_CH1 pin (PB14) configuration */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOC, &GPIO_InitStructure);
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-	/* Connect TIM pins to AF2 */
-	GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_TIM3);
+	/* Connect TIM pins to AF9 */
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource14, GPIO_AF_TIM12);
+}
 
+/**
+ * Configure the TIM2 and TIM9 to work together. TIM2 is a master for
+ * main priod generartion, TIM9 is a timer for generating one 5us pulse.
+ * Configure TIM9 out for alternate function (AF) GPIO port PA2.
+ */
+void tim_2_9_conf(void)
+{
+	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+	TIM_OCInitTypeDef TIM_OCInitStructure;
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+	/* Enable the TIM2 gloabal Interrupt */
+	NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	/* TIM2 clock enable */
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+
+	/* TIM2 base configuration */
+	TIM_TimeBaseStructure.TIM_Period = BEGIN_PERIOD;
+	TIM_TimeBaseStructure.TIM_Prescaler = 1; // 42MHz
+	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+
+	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+	/* TIM IT enable */
+	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+
+	/* TIM9 clock enable */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM9, ENABLE);
+
+	/* TIM9 base configuration */
+	TIM_TimeBaseStructure.TIM_Period = 420; // ~5us delay.
+	TIM_TimeBaseStructure.TIM_Prescaler = 1;
+	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+
+	TIM_TimeBaseInit(TIM9, &TIM_TimeBaseStructure);
+
+	/* TIM9 PWM1 Mode configuration: Channel1 */
+	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OCInitStructure.TIM_Pulse = 1;
+	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+
+	TIM_OC1Init(TIM9, &TIM_OCInitStructure);
+
+	/* One Pulse Mode selection */
+	TIM_SelectOnePulseMode(TIM9, TIM_OPMode_Single);
+	/* Input Trigger selection */
+	TIM_SelectInputTrigger(TIM9, TIM_TS_ITR0); //See DM00031020, p. 664.
+	/* Slave Mode selection: Trigger Mode */
+	TIM_SelectSlaveMode(TIM9, TIM_SlaveMode_Trigger);
+	TIM_SelectOutputTrigger(TIM2, TIM_TRGOSource_Update);
+
+	/* GPIOA clock enable */
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+
+	/* TIM9_CH1 pin (PA2) configuration */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	/* Connect TIM pins to AF3 */
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_TIM9);
 }

@@ -169,56 +169,24 @@ void SysTick_Handler(void)
  */
 void TIM5_IRQHandler(void)
 {
-//    static uint32_t cnt = 0;
-//
-//    uint32_t begin_period = 1052784;
-//    uint32_t end_period = 2000;
-//
-//    if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
-//        STM_EVAL_LEDToggle(LED3);
-//
-//        if (begin_period > end_period) {
-//            current_period = begin_period * (isqrtf(cnt + 1) - isqrtf(cnt));
-//            if (current_period > end_period) {
-//                cnt++;
-//            }
-//        } else if (begin_period < end_period) {
-//            current_period = begin_period * (isqrtf(cnt + 1) + isqrtf(cnt));
-//            if (current_period < end_period) {
-//                cnt++;
-//            }
-//        } else {
-//            current_period = begin_period;
-//        }
-//
-//        TIM_SetCounter(TIM5, 1);
-//        TIM_SetAutoreload(TIM5, current_period);
-//
-//    static uint32_t y_step_cnt = 0;
-
 	STM_EVAL_LEDToggle(LED3);
     if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET) {
-        motion_step(&y_motion);
+        motor_do_step(&y_motor);
         TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
+    }
+}
 
-//        if (y_motion.stright_steps--) {
-//            STM_EVAL_LEDToggle(LED3);
-//
-////            if (y_step_cnt & 1) {
-////                if (y_curr_period > y_period) { // Acceleration.
-////                    y_curr_period =
-////                        BEGIN_PERIOD * (isqrtf(y_step_cnt + 1) - isqrtf(
-////                            y_step_cnt));
-////                    TIM_SetCounter(TIM5, 1);
-////                    TIM_SetAutoreload(TIM5, y_curr_period);
-////                }
-////            }
-//            y_step_cnt++;
-//        } else {
-//            STM_EVAL_LEDOff(LED4);
-//            y_step_cnt = 0;
-//            y_motion.state = NO_MOTION;
-//        }
+/**
+ * @brief  This function handles TIM2 global interrupt request.
+ * @param  None
+ * @retval None
+ */
+void TIM2_IRQHandler(void)
+{
+//	STM_EVAL_LEDToggle(LED3);
+    if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET) {
+//        motor_step(&y_motor);
+        TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
     }
 }
 

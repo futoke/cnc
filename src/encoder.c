@@ -53,10 +53,11 @@ void TIM3_Configuration(void)
     
     // TIM_EncoderMode_TI1: Counter counts on TI1FP1 edge depending on TI2FP2 level.
     TIM_EncoderInterfaceConfig(
-    TIM3, TIM_EncoderMode_TI1,
-    TIM_ICPolarity_Rising,
-    TIM_ICPolarity_Rising);
-    TIM_Cmd(TIM3, ENABLE);
+    		TIM3, TIM_EncoderMode_TI1,
+			TIM_ICPolarity_Rising,
+			TIM_ICPolarity_Rising
+    );
+   	TIM_Cmd(TIM3, ENABLE);
 }
 
 // For revolution counter
